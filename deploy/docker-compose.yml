@@ -1,0 +1,31 @@
+services:
+  interactive-map-db:
+    image: postgres:15
+    container_name: interactive-map-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: interactive-map-db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d interactive-map-db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migrator:
+    image: liquibase/liquibase:4.27
+    container_name: interactive-map-migrator
+    depends_on:
+      interactive-map-db:
+        condition: service_healthy
+    volumes:
+      - ../db:/liquibase/db:ro
+    command: >
+      --url=jdbc:postgresql://interactive-map-db:5432/interactive-map-db
+      --username=postgres
+      --password=postgres
+      --search-path=/liquibase/db
+      --changelog-file=db.changelog-master.xml
+      update
