@@ -1,0 +1,42 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="2026-02-25 18:30:00" author="Mikhail Volzhanin">
+        <sqlFile path="v1.0.1/insert/insert-test-data-interest.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.1/rollback/rollback-insert-test-data-interest.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="2026-02-25 18:35:00" author="Mikhail Volzhanin">
+        <sqlFile path="v1.0.1/insert/insert-test-data-region.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.1/rollback/rollback-insert-test-data-region.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="2026-02-25 18:40:00" author="Mikhail Volzhanin">
+        <sqlFile path="v1.0.1/insert/insert-test-data-status.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.1/rollback/rollback-insert-test-data-status.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="2026-02-25 18:45:00" author="Mikhail Volzhanin">
+        <sqlFile path="v1.0.1/insert/insert-test-data-users.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.1/rollback/rollback-insert-test-data-users.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="2026-02-25 18:50:00" author="Mikhail Volzhanin">
+        <sqlFile path="v1.0.1/insert/insert-test-data-users-interest.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.1/rollback/rollback-insert-test-data-users-interest.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

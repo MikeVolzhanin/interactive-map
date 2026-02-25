@@ -1,0 +1,3 @@
+DELETE
+FROM status
+WHERE id IN (1, 2)
