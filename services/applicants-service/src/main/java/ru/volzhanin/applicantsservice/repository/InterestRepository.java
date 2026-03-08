@@ -5,5 +5,5 @@ import org.springframework.stereotype.Repository;
 import ru.volzhanin.applicantsservice.entity.Interest;
 
 @Repository
-public interface InterestRepository extends JpaRepository<Interest, Integer> {
+public interface InterestRepository extends JpaRepository<Interest, Long> {
 }
