@@ -13,11 +13,11 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "status")
-public class EducationStatus {
+public class EducationLevel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id;
+    private Integer id;
     @Column(name = "level_of_education")
     private String level;
 }
