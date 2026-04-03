@@ -16,12 +16,10 @@ public class InterestService {
     private final InterestRepository interestRepository;
     private final InterestMapper interestMapper;
 
-    @Transactional(readOnly = true)
     public List<InterestDto> getAll() {
         return interestMapper.toDto(interestRepository.findAll());
     }
 
-    @Transactional(readOnly = true)
     public InterestDto getByInterestId(Long id) {
         Interest interest = interestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Interest not found: " + id));

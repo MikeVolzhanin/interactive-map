@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InterestDto {
     private Long id;
-    private String interestName;
-    private String interestDescription;
+    private String name;
+    private String description;
 }
