@@ -32,6 +32,22 @@ services:
       --changelog-file=db.changelog-master.xml
       update
 
+  applicants-service:
+    build:
+      context: ../services/applicants-service
+      dockerfile: Dockerfile
+    container_name: interactive-map-applicants-service
+    depends_on:
+      interactive-map-db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
   frontend:
     build:
       context: ../frontend

@@ -1,0 +1,331 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 16px 32px;
+  gap: 20px;
+}
+
+/* ===== Card ===== */
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 580px;
+  padding: 40px 40px 36px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  text-align: center;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+/* ===== Fieldset ===== */
+.fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 28px;
+}
+
+.fieldset:disabled {
+  opacity: 0.7;
+}
+
+.legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+  width: 100%;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 8px;
+}
+
+/* ФИО — 3 колонки на десктопе, стек на мобиле */
+.nameGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== Согласие ===== */
+.consentBlock {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.consentLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: #1f5bd8;
+  cursor: pointer;
+}
+
+.consentText {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.consentText a {
+  color: #1f5bd8;
+  text-decoration: underline;
+}
+
+.consentText a:hover {
+  color: #1748b0;
+}
+
+.consentError .consentText {
+  color: #ef4444;
+}
+
+.consentErrorText {
+  font-size: 12px;
+  color: #ef4444;
+  padding-left: 26px;
+}
+
+/* ===== Сообщения ===== */
+.catalogError,
+.serverError {
+  font-size: 13px;
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.successMsg {
+  font-size: 14px;
+  font-weight: 500;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* ===== Кнопка ===== */
+.submitBtn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #1f5bd8;
+  border: none;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: #1748b0;
+}
+
+.submitBtn:active:not(:disabled) {
+  background-color: #1340a0;
+}
+
+.submitBtn:focus-visible {
+  outline: 2px solid #1f5bd8;
+  outline-offset: 3px;
+}
+
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ===== Support + Footer ===== */
+.support {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  max-width: 580px;
+  line-height: 1.6;
+}
+
+.support a {
+  color: #1f5bd8;
+  font-weight: 500;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1f5bd8;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.footerText {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ===== Skeleton loader ===== */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeletonCard {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 580px;
+  padding: 40px 40px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.skeletonTitle,
+.skeletonLine {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0f2f5 25%, #e4e6ea 50%, #f0f2f5 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonTitle {
+  height: 28px;
+  width: 55%;
+  align-self: center;
+}
+
+.skeletonLine {
+  height: 42px;
+  width: 100%;
+}
+
+/* ===== Responsive ===== */
+
+/* Планшет: 601px – 900px */
+@media (max-width: 900px) {
+  .card {
+    max-width: 100%;
+  }
+}
+
+/* Планшет: ФИО в 2 колонки (Фамилия + Имя, Отчество отдельно) */
+@media (max-width: 720px) {
+  .nameGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Отчество занимает всю строку */
+  .nameGrid > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Мобиль: < 600px */
+@media (max-width: 600px) {
+  .main {
+    padding: 24px 12px 24px;
+  }
+
+  .card {
+    padding: 24px 16px 20px;
+    border-radius: 10px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .nameGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* На мобиле отчество снова занимает 1 колонку — сброс планшетного правила */
+  .nameGrid > :nth-child(3) {
+    grid-column: auto;
+  }
+
+  .legend {
+    font-size: 12px;
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+}
+
+/* Очень маленькие экраны: < 360px */
+@media (max-width: 360px) {
+  .card {
+    padding: 20px 12px 16px;
+    border-radius: 8px;
+  }
+
+  .submitBtn {
+    font-size: 14px;
+  }
+}

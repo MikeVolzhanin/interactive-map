@@ -1,0 +1,91 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  gap: 20px;
+}
+
+/* ===== Card ===== */
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 36px 36px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  text-align: center;
+  margin-bottom: 28px;
+  letter-spacing: -0.01em;
+}
+
+/* ===== Support hint ===== */
+.support {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+.support a {
+  font-weight: 500;
+}
+
+/* ===== Footer ===== */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1f5bd8;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.footerText {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 480px) {
+  .card {
+    padding: 28px 20px 24px;
+    border-radius: 8px;
+  }
+
+  .title {
+    font-size: 20px;
+    margin-bottom: 22px;
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+}

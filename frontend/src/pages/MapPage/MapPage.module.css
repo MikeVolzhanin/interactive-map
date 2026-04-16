@@ -1,0 +1,59 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f0f2f5;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1f5bd8;
+  letter-spacing: 0.05em;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+  flex: 1;
+}
+
+.logoutBtn {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  background: none;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 14px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.logoutBtn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder {
+  font-size: 16px;
+  color: #9ca3af;
+}
