@@ -28,7 +28,7 @@ public class RegionController {
     }
 
     @GetMapping("/{id}")
-    public RegionDto getById(@PathVariable Integer id) {
+    public RegionDto getById(@PathVariable Long id) {
         return regionService.getById(id);
     }
 
@@ -39,13 +39,13 @@ public class RegionController {
     }
 
     @PatchMapping("/{id}")
-    public RegionDto update(@PathVariable Integer id, @RequestBody RegionDto dto) {
+    public RegionDto update(@PathVariable Long id, @RequestBody RegionDto dto) {
         return regionService.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Integer id) {
+    public void delete(@PathVariable Long id) {
         regionService.delete(id);
     }
 }

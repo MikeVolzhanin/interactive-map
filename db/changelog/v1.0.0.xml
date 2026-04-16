@@ -39,4 +39,10 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="2026-04-16 16:53:00" author="Mikhail Volzhanin">
+        <sqlFile path="v1.0.0/create/create-refresh-token.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.0/rollback/rollback-create-refresh-token.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>

@@ -22,7 +22,7 @@ public class RegionService {
     }
 
     @Transactional(readOnly = true)
-    public RegionDto getById(Integer id) {
+    public RegionDto getById(Long id) {
         Region region = regionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Region not found: " + id));
         return regionMapper.toDto(region);
@@ -36,7 +36,7 @@ public class RegionService {
     }
 
     @Transactional
-    public RegionDto update(Integer id, RegionDto dto) {
+    public RegionDto update(Long id, RegionDto dto) {
         Region region = regionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Region not found: " + id));
 
@@ -47,7 +47,7 @@ public class RegionService {
     }
 
     @Transactional
-    public void delete(Integer id) {
+    public void delete(Long id) {
         Region region = regionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Region not found: " + id));
 

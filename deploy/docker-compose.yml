@@ -32,6 +32,15 @@ services:
       --changelog-file=db.changelog-master.xml
       update
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: interactive-map-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:

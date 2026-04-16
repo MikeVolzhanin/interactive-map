@@ -26,7 +26,7 @@ public class UserInfoDto {
     @NotEmpty(message = "ID уровня образования обязателен")
     private Integer educationLevelId;
     @NotEmpty(message = "ID региона проживания обязателен")
-    private Integer regionId;
+    private Long regionId;
     @NotEmpty(message = "Минимум один ID cферы интереса")
     private Set<Long> interestIds;
     private Boolean profileCompleted;

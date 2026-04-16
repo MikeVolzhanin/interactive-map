@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.volzhanin.applicantsservice.dto.token.RefreshTokenRequest;
 import ru.volzhanin.applicantsservice.dto.user.LoginRegisterUserDto;
+import ru.volzhanin.applicantsservice.dto.user.PasswordDto;
 import ru.volzhanin.applicantsservice.dto.user.VerifyUserDto;
 import ru.volzhanin.applicantsservice.service.auth.AuthenticationService;
 import ru.volzhanin.applicantsservice.service.auth.RefreshTokenService;
@@ -82,5 +83,15 @@ public class AuthController {
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
         return refreshTokenService.refreshToken(request);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> resetPassword(@RequestParam String email) {
+        return authenticationService.resetPassword(email);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody PasswordDto passwordDto) {
+        return authenticationService.changePassword(passwordDto);
     }
 }
