@@ -8,8 +8,10 @@ services:
       POSTGRES_DB: interactive-map-db
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d interactive-map-db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d interactive-map-db" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -29,3 +31,32 @@ services:
       --search-path=/liquibase/db
       --changelog-file=db.changelog-master.xml
       update
+
+  applicants-service:
+    build:
+      context: ../services/applicants-service
+      dockerfile: Dockerfile
+    container_name: interactive-map-applicants-service
+    depends_on:
+      interactive-map-db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: interactive-map-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

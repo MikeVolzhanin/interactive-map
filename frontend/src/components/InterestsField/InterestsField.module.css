@@ -1,0 +1,75 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Чип-тег вместо обычного чекбокса — нагляднее для множественного выбора */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1.5px solid #d1d5db;
+  border-radius: 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.chip:hover:not(.chipDisabled) {
+  border-color: #6b9ef5;
+  background: #f0f5ff;
+  color: #1f5bd8;
+}
+
+.chipChecked {
+  background: #1f5bd8;
+  border-color: #1f5bd8;
+  color: #ffffff;
+}
+
+.chipChecked:hover:not(.chipDisabled) {
+  background: #1748b0;
+  border-color: #1748b0;
+  color: #ffffff;
+}
+
+.chipDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Прячем нативный чекбокс, оставляем доступность */
+.hidden {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.hint {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.error {
+  font-size: 12px;
+  color: #ef4444;
+}

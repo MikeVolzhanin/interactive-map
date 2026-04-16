@@ -1,0 +1,79 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.wrapper {
+  position: relative;
+}
+
+.select {
+  width: 100%;
+  /* Явный line-height предотвращает клиппинг текста на Windows Chrome */
+  height: 42px;
+  line-height: 1.4;
+  padding: 0 36px 0 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #1a1a2e;
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  /* Текст не должен вылезать за стрелку */
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Placeholder-состояние (value пустое) */
+.selectEmpty {
+  color: #9ca3af;
+}
+
+.select:focus {
+  border-color: #1f5bd8;
+  box-shadow: 0 0 0 3px rgba(31, 91, 216, 0.12);
+}
+
+.select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.selectError {
+  border-color: #ef4444;
+}
+
+.selectError:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.error {
+  font-size: 12px;
+  color: #ef4444;
+  line-height: 1.4;
+}

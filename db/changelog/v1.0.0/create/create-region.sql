@@ -1,6 +1,5 @@
 CREATE TABLE IF NOT EXISTS region
 (
-    id BIGSERIAL PRIMARY KEY,
-    name_of_region VARCHAR(128) NOT NULL UNIQUE,
-    description TEXT NOT NULL
+    id             BIGSERIAL PRIMARY KEY,
+    name_of_region VARCHAR(128) NOT NULL UNIQUE
 );
