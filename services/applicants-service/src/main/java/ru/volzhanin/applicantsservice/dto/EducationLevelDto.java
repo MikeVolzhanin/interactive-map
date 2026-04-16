@@ -1,6 +1,6 @@
 package ru.volzhanin.applicantsservice.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EducationLevelDto {
     private Integer id;
-    @NotBlank(message = "Level must not be blank")
+    @NotEmpty(message = "Уровень образования не должен быть пустым")
     private String level;
 }

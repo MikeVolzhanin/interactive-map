@@ -20,6 +20,4 @@ public class Region {
     private Long id;
     @Column(name = "name_of_region")
     private String name;
-    @Column(name = "description")
-    private String description;
 }
