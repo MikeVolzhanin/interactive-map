@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f0f2f5;
+  background: #F5F5F5;
 }
 
 .header {
@@ -12,30 +12,30 @@
   padding: 0 24px;
   height: 56px;
   background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #E6E6E6;
   flex-shrink: 0;
 }
 
 .logo {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
-  color: #1f5bd8;
+  color: #234B9B;
   letter-spacing: 0.05em;
 }
 
 .title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: #1a1a2e;
+  color: #0F2D69;
   flex: 1;
 }
 
 .logoutBtn {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  color: #6b7280;
+  color: #929292;
   background: none;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid #C6C6C6;
   border-radius: 6px;
   padding: 6px 14px;
   transition: color 0.2s, border-color 0.2s;
@@ -54,6 +54,6 @@
 }
 
 .placeholder {
-  font-size: 16px;
-  color: #9ca3af;
+  font-size: 17px;
+  color: #929292;
 }

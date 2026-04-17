@@ -80,3 +80,17 @@ export function resetPassword(email, password) {
     body: JSON.stringify({ email, password }),
   })
 }
+
+/** POST /api/auth/logout — инвалидирует accessToken на сервере */
+export async function logout() {
+  const accessToken = localStorage.getItem('accessToken')
+  try {
+    await fetch(`${BASE}/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken ?? ''}` },
+    })
+  } finally {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+  }
+}
