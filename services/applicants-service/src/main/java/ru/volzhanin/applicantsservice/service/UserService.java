@@ -19,6 +19,7 @@ import ru.volzhanin.applicantsservice.repository.UsersRepository;
 
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +40,15 @@ public class UserService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Optional<User> existingUser = userRepository.findByPhoneNumber(input.getPhoneNumber());
+
+        if (existingUser.isPresent() &&
+                !existingUser.get().getId().equals(user.getId())) {
+
+            log.info("Пользователь с таким номером телефона уже существует phone={}", input.getPhoneNumber());
+            return new ResponseEntity<>("Пользователь с таким номером телефона уже существует", HttpStatus.CONFLICT);
+        }
 
         user.setFirstName(input.getFirstName());
         user.setLastName(input.getLastName());
