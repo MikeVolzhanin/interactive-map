@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f0f2f5;
+  background-color: #F5F5F5;
 }
 
 .main {
@@ -26,9 +26,9 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #0F2D69;
   text-align: center;
   margin-bottom: 28px;
   letter-spacing: -0.01em;
@@ -36,8 +36,8 @@
 
 /* ===== Support hint ===== */
 .support {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  color: #929292;
   text-align: center;
   max-width: 420px;
   line-height: 1.6;
@@ -54,21 +54,13 @@
   justify-content: center;
   gap: 14px;
   padding: 20px 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #E6E6E6;
   background: #ffffff;
 }
 
 .logo {
-  font-size: 18px;
-  font-weight: 800;
-  color: #1f5bd8;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.footerText {
-  font-size: 12px;
-  color: #6b7280;
+  height: 40px;
+  width: auto;
 }
 
 /* ===== Responsive ===== */
@@ -79,7 +71,7 @@
   }
 
   .title {
-    font-size: 20px;
+    font-size: 22px;
     margin-bottom: 22px;
   }
 

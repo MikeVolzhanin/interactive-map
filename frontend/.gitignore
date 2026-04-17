@@ -12,6 +12,9 @@ dist/
 .env.local
 .env.*.local
 
+# Claude
+.claude/
+
 # IDE
 .idea/
 .vscode/

@@ -7,6 +7,7 @@ import ComboboxField from '../../components/ComboboxField/ComboboxField.jsx'
 import InterestsField from '../../components/InterestsField/InterestsField.jsx'
 import { fetchRegions, fetchEducationLevels, fetchInterests } from '../../api/catalog.js'
 import { getUserInfo, addUserInfo } from '../../api/users.js'
+import { logout } from '../../api/auth.js'
 import styles from './OnboardingPage.module.css'
 
 const PHONE_RE = /^\+7\d{10}$/
@@ -139,6 +140,7 @@ export default function OnboardingPage() {
         interestIds: form.interestIds,
       })
       setSuccess(true)
+      await logout()
       setTimeout(() => navigate('/map', { replace: true }), 1500)
     } catch (err) {
       setServerError(err.message)

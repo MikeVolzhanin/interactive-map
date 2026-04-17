@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -170,7 +172,7 @@ public class AuthenticationService {
         }
 
         log.warn("Попытка верификации несуществующего аккаунта с email: {}", input.getEmail());
-        return new ResponseEntity<>("Пользователь не найден", HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>( HttpStatus.OK);
     }
 
     public ResponseEntity<?> resendVerificationCode(String email) {
@@ -211,7 +213,7 @@ public class AuthenticationService {
         }
 
         log.warn("Попытка повторной отправки кода для несуществующего пользователя: {}", email);
-        return new ResponseEntity<>("Пользователь не найден", HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     public void sendVerificationEmail(User user) {
@@ -277,6 +279,21 @@ public class AuthenticationService {
         }
 
         return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+    }
+
+    public ResponseEntity<?> logout() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String email = Objects.requireNonNull(authentication).getName();
+
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
+
+        RefreshToken refreshToken = refreshTokenRepository.findByUserId(user.getId()).orElseThrow(() -> new RuntimeException("Refresh Token не найден"));
+
+        refreshTokenRepository.delete(refreshToken);
+
+        log.info("Пользователь вышел email={}", email);
+        return new ResponseEntity<>("Пользователь вышел", HttpStatus.OK);
     }
 
 

@@ -94,4 +94,9 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@RequestBody PasswordDto passwordDto) {
         return authenticationService.changePassword(passwordDto);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        return authenticationService.logout();
+    }
 }

@@ -15,15 +15,12 @@ export default function AuthCard({ title, children }) {
 
         <p className={styles.support}>
           Если у вас возникли технические сложности, свяжитесь с нами по email{' '}
-          <a href="mailto:digital@hse.ru">digital@hse.ru</a>
+          <a href="mailto:mrvolzhanin@edu.hse.ru">mrvolzhanin@edu.hse.ru</a>
         </p>
       </main>
 
       <footer className={styles.footer}>
-        <span className={styles.logo}>ВШЭ</span>
-        <span className={styles.footerText}>
-          Высшая школа экономики | Национальный исследовательский университет
-        </span>
+        <img src="/hse-logo-footer.svg" alt="НИУ ВШЭ" className={styles.logo} />
       </footer>
     </div>
   )
