@@ -1,4 +1,4 @@
-dservices:
+services:
   interactive-map-db:
     image: postgres:15
     container_name: interactive-map-db
@@ -59,4 +59,3 @@ dservices:
 
 volumes:
   postgres_data:
-  redis_data:
