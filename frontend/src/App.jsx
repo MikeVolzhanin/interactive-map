@@ -6,6 +6,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage.jsx'
 import OnboardingPage from './pages/OnboardingPage/OnboardingPage.jsx'
 import MapPage from './pages/MapPage/MapPage.jsx'
+import AdminPage from './pages/AdminPage/AdminPage.jsx'
+import AdminRoute from './components/AdminRoute/AdminRoute.jsx'
 
 export default function App() {
   return (
@@ -17,6 +19,7 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/map" element={<MapPage />} />
+      <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )

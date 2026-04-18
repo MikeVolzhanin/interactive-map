@@ -1,4 +1,4 @@
-services:
+dservices:
   interactive-map-db:
     image: postgres:15
     container_name: interactive-map-db

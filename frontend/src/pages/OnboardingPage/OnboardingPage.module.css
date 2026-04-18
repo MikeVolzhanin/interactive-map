@@ -208,16 +208,8 @@
 }
 
 .logo {
-  font-size: 20px;
-  font-weight: 800;
-  color: #234B9B;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.footerText {
-  font-size: 13px;
-  color: #929292;
+  height: 40px;
+  width: auto;
 }
 
 /* ===== Skeleton loader ===== */
