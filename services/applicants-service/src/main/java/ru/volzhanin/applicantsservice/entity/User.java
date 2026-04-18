@@ -2,6 +2,8 @@ package ru.volzhanin.applicantsservice.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,6 +29,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 @Data
 @NoArgsConstructor
@@ -57,8 +60,7 @@ public class User implements UserDetails {
 
     @Column(name = "verification_attempts_left")
     private Short verificationAttemptsLeft = 3;
-
-
+    
     //остальная информация
     @Column(name = "last_name")
     private String lastName;
@@ -91,6 +93,10 @@ public class User implements UserDetails {
     )
     private Set<Interest> interests = new HashSet<>();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
+
     @Column(name = "profile_completed")
     private boolean profileCompleted = false;
 
@@ -105,7 +111,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override

@@ -3,6 +3,7 @@ package ru.volzhanin.applicantsservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,27 +25,32 @@ public class EducationLevelController {
     private final EducationLevelService educationLevelService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public List<EducationLevelDto> getAllEducationLevels() {
         return educationLevelService.getAllEducationLevel();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public EducationLevelDto getEducationLevel(@PathVariable Integer id) {
         return educationLevelService.getEducationLevelById(id);
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public EducationLevelDto create(@RequestBody @Valid EducationLevelDto dto) {
         return educationLevelService.create(dto);
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public EducationLevelDto update(@PathVariable Integer id, @RequestBody @Valid EducationLevelDto dto) {
         return educationLevelService.updateEducationLevelById(id, dto);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Integer id) {
         educationLevelService.delete(id);
     }
