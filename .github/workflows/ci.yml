@@ -1,0 +1,29 @@
+name: CI — applicants-service
+
+on:
+  push:
+    paths:
+      - 'services/applicants-service/**'
+  pull_request:
+    paths:
+      - 'services/applicants-service/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/applicants-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests
+        run: mvn test

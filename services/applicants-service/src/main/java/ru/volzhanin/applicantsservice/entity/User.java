@@ -16,11 +16,8 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -29,6 +26,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 @Data
@@ -60,7 +58,7 @@ public class User implements UserDetails {
 
     @Column(name = "verification_attempts_left")
     private Short verificationAttemptsLeft = 3;
-    
+
     //остальная информация
     @Column(name = "last_name")
     private String lastName;

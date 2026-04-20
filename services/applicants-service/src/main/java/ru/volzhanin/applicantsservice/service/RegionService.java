@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.volzhanin.applicantsservice.dto.RegionDto;
 import ru.volzhanin.applicantsservice.entity.Region;
+import ru.volzhanin.applicantsservice.exception.ResourceNotFoundException;
 import ru.volzhanin.applicantsservice.mapper.RegionMapper;
 import ru.volzhanin.applicantsservice.repository.RegionRepository;
 
@@ -24,33 +25,28 @@ public class RegionService {
     @Transactional(readOnly = true)
     public RegionDto getById(Long id) {
         Region region = regionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Region not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Регион не найден: " + id));
         return regionMapper.toDto(region);
     }
 
     @Transactional
     public RegionDto create(RegionDto dto) {
         Region region = regionMapper.toEntity(dto);
-        Region saved = regionRepository.save(region);
-        return regionMapper.toDto(saved);
+        return regionMapper.toDto(regionRepository.save(region));
     }
 
     @Transactional
     public RegionDto update(Long id, RegionDto dto) {
         Region region = regionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Region not found: " + id));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Регион не найден: " + id));
         regionMapper.updateFromDto(dto, region);
-
-        Region updated = regionRepository.save(region);
-        return regionMapper.toDto(updated);
+        return regionMapper.toDto(regionRepository.save(region));
     }
 
     @Transactional
     public void delete(Long id) {
         Region region = regionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Region not found: " + id));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Регион не найден: " + id));
         regionRepository.delete(region);
     }
 }
