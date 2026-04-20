@@ -26,6 +26,13 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+__MACOSX/
+
+# Brand assets (design source files, not used in code)
+logo/
+logo_footer/
+logo_header/
+font/
 
 # Logs
 *.log

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +22,7 @@ import ru.volzhanin.applicantsservice.dto.user.LoginRegisterUserDto;
 import ru.volzhanin.applicantsservice.dto.user.PasswordDto;
 import ru.volzhanin.applicantsservice.dto.user.VerifyUserDto;
 import ru.volzhanin.applicantsservice.entity.RefreshToken;
+import ru.volzhanin.applicantsservice.entity.Role;
 import ru.volzhanin.applicantsservice.entity.User;
 import ru.volzhanin.applicantsservice.repository.RefreshTokenRepository;
 import ru.volzhanin.applicantsservice.repository.UsersRepository;
@@ -49,9 +51,12 @@ public class AuthenticationService {
     public ResponseEntity<?> signup(LoginRegisterUserDto input) {
         log.info("Начало регистрации для email: {}", input.getEmail());
 
+        Role role = resolveRole(input.getEmail());
+
         User user = User.builder()
                 .email(input.getEmail())
                 .password(passwordEncoder.encode(input.getPassword()))
+                .role(role)
                 .build();
 
         user.setVerificationCode(generateVerificationCode());
@@ -61,8 +66,7 @@ public class AuthenticationService {
         log.debug("Сгенерирован код верификации для {}: {}", input.getEmail(), user.getVerificationCode());
 
         // Проверка существования пользователя (оригинальная логика)
-        if (userRepository.findByEmail(user.getEmail()).isPresent() ||
-                userRepository.findByPhoneNumber(user.getPhoneNumber()).isPresent()) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             log.warn("Пользователь уже существует: email={}, phone={}",
                     user.getEmail(), user.getPhoneNumber());
             return new ResponseEntity<>("Пользователь уже существует", HttpStatus.BAD_REQUEST);
@@ -125,7 +129,7 @@ public class AuthenticationService {
             } else {
                 log.error("Ошибка аутентификации для email {}: {}", input.getEmail(), e.getMessage(), e);
             }
-            return new ResponseEntity<>("Ошибка аутентификации", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>("Неверный пароль или почта", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             log.error("Неожиданная ошибка при аутентификации пользователя {}: {}",
                     input.getEmail(), e.getMessage(), e);
@@ -302,6 +306,11 @@ public class AuthenticationService {
         return userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(
                 String.format("Пользователь '%s' не найден", username)
         ));
+    }
+
+    private Role resolveRole(String email) {
+        String domain = email.substring(email.indexOf('@') + 1).toLowerCase();
+        return (domain.equals("hse.ru") || domain.equals("gmail.com")) ? Role.ADMIN : Role.USER;
     }
 
     private String generateVerificationCode() {

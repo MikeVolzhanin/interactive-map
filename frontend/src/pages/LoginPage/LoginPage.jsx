@@ -6,6 +6,14 @@ import PasswordField from '../../components/PasswordField/PasswordField.jsx'
 import { login } from '../../api/auth.js'
 import styles from './LoginPage.module.css'
 
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return null
+  }
+}
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
@@ -23,10 +31,16 @@ export default function LoginPage() {
     setServerError('')
     try {
       const { accessToken, refreshToken } = await login(form.email.trim(), form.password)
-      // Сохраняем токены
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
-      navigate('/onboarding')
+
+      const payload = parseJwt(accessToken)
+      const roles = payload?.roles ?? payload?.authorities ?? payload?.role ?? []
+      const isAdmin = Array.isArray(roles)
+        ? roles.includes('ROLE_ADMIN')
+        : roles === 'ROLE_ADMIN'
+
+      navigate(isAdmin ? '/admin' : '/onboarding')
     } catch (err) {
       setServerError(err.message)
     } finally {
