@@ -3,8 +3,6 @@ package ru.volzhanin.applicantsservice.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -13,6 +11,8 @@ import ru.volzhanin.applicantsservice.dto.user.UserInterestsDto;
 import ru.volzhanin.applicantsservice.entity.Interest;
 import ru.volzhanin.applicantsservice.entity.Role;
 import ru.volzhanin.applicantsservice.entity.User;
+import ru.volzhanin.applicantsservice.exception.PhoneAlreadyExistsException;
+import ru.volzhanin.applicantsservice.exception.UserNotFoundException;
 import ru.volzhanin.applicantsservice.repository.EducationLevelRepository;
 import ru.volzhanin.applicantsservice.repository.InterestRepository;
 import ru.volzhanin.applicantsservice.repository.RegionRepository;
@@ -49,22 +49,17 @@ public class UserService {
     private final InterestRepository interestRepository;
 
     @Transactional
-    public ResponseEntity<?> addInfo(UserInfoDto input) {
-
+    public void addInfo(UserInfoDto input) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         String email = Objects.requireNonNull(authentication).getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
 
         Optional<User> existingUser = userRepository.findByPhoneNumber(input.getPhoneNumber());
-
-        if (existingUser.isPresent() &&
-                !existingUser.get().getId().equals(user.getId())) {
-
+        if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
             log.info("Пользователь с таким номером телефона уже существует phone={}", input.getPhoneNumber());
-            return new ResponseEntity<>("Пользователь с таким номером телефона уже существует", HttpStatus.CONFLICT);
+            throw new PhoneAlreadyExistsException("Пользователь с таким номером телефона уже существует");
         }
 
         user.setFirstName(input.getFirstName());
@@ -75,35 +70,31 @@ public class UserService {
 
         user.setEducationLevel(
                 educationLevelRepository.findById(input.getEducationLevelId())
-                        .orElseThrow(() -> new RuntimeException("EducationLevel not found"))
+                        .orElseThrow(() -> new UserNotFoundException("Уровень образования не найден"))
         );
 
         user.setRegion(
                 regionRepository.findById(input.getRegionId())
-                        .orElseThrow(() -> new RuntimeException("Region not found"))
+                        .orElseThrow(() -> new UserNotFoundException("Регион не найден"))
         );
 
-        user.setInterests(
-                new HashSet<>(interestRepository.findAllById(input.getInterestIds()))
-        );
-
+        user.setInterests(new HashSet<>(interestRepository.findAllById(input.getInterestIds())));
         user.setProfileCompleted(true);
 
         userRepository.save(user);
-
-        log.info("Профиль пользователя заполнен : email={}", email);
-
-        return ResponseEntity.ok("success");
+        log.info("Профиль пользователя заполнен: email={}", email);
     }
 
-    public ResponseEntity<?> getUserInfo() {
+    public UserInfoDto getUserInfo() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = Objects.requireNonNull(authentication).getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
 
-        UserInfoDto userInfoDto = UserInfoDto.builder()
+        log.info("Предоставлена информация по профилю для email={}", email);
+
+        return UserInfoDto.builder()
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .middleName(user.getMiddleName())
@@ -114,30 +105,20 @@ public class UserService {
                 .regionId(user.getRegion().getId())
                 .profileCompleted(user.isProfileCompleted())
                 .build();
-
-        log.info("Предоставлена информация по профилю для email={}", email);
-
-        return new ResponseEntity<>(userInfoDto, HttpStatus.OK);
     }
 
     @Transactional
-    public ResponseEntity<?> changeInterests(UserInterestsDto input) {
-
+    public void changeInterests(UserInterestsDto input) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         String email = Objects.requireNonNull(authentication).getName();
 
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
 
-        user.setInterests(
-                new HashSet<>(interestRepository.findAllById(input.getInterestIds()))
-        );
-
+        user.setInterests(new HashSet<>(interestRepository.findAllById(input.getInterestIds())));
         userRepository.save(user);
 
         log.info("Интересы обновлены: email={}", email);
-
-        return new ResponseEntity<>("success change interests", HttpStatus.OK);
     }
 
     public void writeUsersToStream(List<String> fields, OutputStream os) throws IOException {
