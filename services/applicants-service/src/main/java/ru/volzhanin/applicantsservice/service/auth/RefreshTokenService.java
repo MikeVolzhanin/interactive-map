@@ -3,22 +3,18 @@ package ru.volzhanin.applicantsservice.service.auth;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.volzhanin.applicantsservice.dto.token.RefreshTokenRequest;
 import ru.volzhanin.applicantsservice.dto.token.TokenDto;
 import ru.volzhanin.applicantsservice.entity.RefreshToken;
 import ru.volzhanin.applicantsservice.entity.User;
+import ru.volzhanin.applicantsservice.exception.RefreshTokenExpiredException;
+import ru.volzhanin.applicantsservice.exception.RefreshTokenNotFoundException;
 import ru.volzhanin.applicantsservice.repository.RefreshTokenRepository;
-import ru.volzhanin.applicantsservice.repository.UsersRepository;
 import ru.volzhanin.applicantsservice.service.jwt.JwtService;
 
-import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -27,7 +23,6 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final RefreshTokenCreationService refreshTokenCreationService;
     private final JwtService jwtService;
-    private final AuthenticationService authenticationService;
 
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
@@ -41,27 +36,20 @@ public class RefreshTokenService {
         return true;
     }
 
-    public ResponseEntity<?> refreshToken(RefreshTokenRequest request) {
-        String stringRequest = request.getRefreshToken();
+    @Transactional
+    public TokenDto refreshToken(RefreshTokenRequest request) {
+        RefreshToken refreshToken = findByToken(request.getRefreshToken())
+                .orElseThrow(() -> new RefreshTokenNotFoundException("Refresh token не найден"));
 
-        Optional<RefreshToken> refreshToken = findByToken(stringRequest);
-
-        if(refreshToken.isEmpty()) return new ResponseEntity<>("This refresh token doesn't exist", HttpStatus.BAD_REQUEST);
-
-        if (verifyExpiration(refreshToken.get())) {
-            User user = refreshToken.get().getUser();
-
-            String newToken = jwtService.generateToken(
-                    authenticationService.loadUserByUsername(user.getUsername())
-            );
-
-            String newRefreshToken = refreshTokenCreationService.createRefreshToken(user.getId()).getToken();
-
-            log.info("Новый refresh token создан для {}", user.getUsername());
-            return ResponseEntity.ok(new TokenDto(newToken, newRefreshToken));
+        if (!verifyExpiration(refreshToken)) {
+            throw new RefreshTokenExpiredException("Refresh token истёк");
         }
 
-        return new ResponseEntity<>("Expired refresh token", HttpStatus.BAD_REQUEST);
-    }
+        User user = refreshToken.getUser();
+        String newAccessToken = jwtService.generateToken(user);
+        String newRefreshToken = refreshTokenCreationService.createRefreshToken(user).getToken();
 
+        log.info("Токены обновлены для {}", user.getUsername());
+        return new TokenDto(newAccessToken, newRefreshToken);
+    }
 }
