@@ -57,7 +57,7 @@ public class AuthenticationService {
 
         if (userRepository.findByEmail(input.getEmail()).isPresent()) {
             log.warn("Пользователь уже существует: email={}", input.getEmail());
-            throw new UserAlreadyExistsException("Пользователь уже существует");
+            throw new UserAlreadyExistsException("Пользователь с такой почтой уже существует");
         }
 
         Role role = resolveRole(input.getEmail());
@@ -90,7 +90,7 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> {
                     log.warn("Пользователь с email {} не найден", input.getEmail());
-                    return new UserNotFoundException("Пользователь не найден");
+                    return new UserNotFoundException("Неверный пароль или почта");
                 });
 
         if (!user.isEnabled()) {
