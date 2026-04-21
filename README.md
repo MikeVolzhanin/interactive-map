@@ -6,7 +6,7 @@
 
 | Слой | Технологии |
 |------|-----------|
-| Frontend | React 18, Vite, TypeScript, React Router |
+| Frontend | React 18, Vite, JavaScript, React Router |
 | Backend | Java 21, Spring Boot, Spring Security, JWT |
 | База данных | PostgreSQL 15, Liquibase |
 | Деплой | Docker, Docker Compose, Nginx |
