@@ -130,6 +130,15 @@ cd deploy
 docker-compose up interactive-map-db migrator
 ```
 
+Затем переименовать файл конфигурации:
+
+```bash
+cp services/applicants-service/src/main/resources/application-example.yml \
+   services/applicants-service/src/main/resources/application.yml
+```
+
+> `application-example.yml` — шаблон конфигурации, хранящийся в репозитории. При клонировании необходимо создать на его основе `application.yml` и заполнить переменные окружения (БД, JWT, почта). Файл `application.yml` добавлен в `.gitignore` и не попадает в репозиторий.
+
 Затем запустить сервис через IDE или Maven:
 
 ```bash
