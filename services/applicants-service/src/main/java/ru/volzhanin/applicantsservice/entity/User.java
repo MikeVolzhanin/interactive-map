@@ -98,6 +98,9 @@ public class User implements UserDetails {
     @Column(name = "profile_completed")
     private boolean profileCompleted = false;
 
+    @Column(name = "password_reset_pending")
+    private boolean passwordResetPending = false;
+
     @CreationTimestamp
     @Column(name = "registered_at", updatable = false)
     private LocalDateTime registeredAt;

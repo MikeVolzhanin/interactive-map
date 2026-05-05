@@ -33,11 +33,11 @@ import ru.volzhanin.applicantsservice.repository.UsersRepository;
 import ru.volzhanin.applicantsservice.service.email.DefaultEmailService;
 import ru.volzhanin.applicantsservice.service.jwt.JwtService;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 @AllArgsConstructor
@@ -71,8 +71,6 @@ public class AuthenticationService {
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEmailVerified(false);
-
-        log.debug("Сгенерирован код верификации для {}: {}", input.getEmail(), user.getVerificationCode());
 
         try {
             sendVerificationEmail(user);
@@ -190,7 +188,7 @@ public class AuthenticationService {
         }
 
         User user = optionalUser.get();
-        user.setPassword("reset");
+        user.setPasswordResetPending(true);
         user.setEmailVerified(false);
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
@@ -208,10 +206,11 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(passwordDto.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
 
-        if (!Objects.requireNonNull(user.getPassword()).equals("reset") || !user.isEmailVerified()) {
+        if (!user.isPasswordResetPending() || !user.isEmailVerified()) {
             throw new UserNotFoundException("Пользователь не найден");
         }
 
+        user.setPasswordResetPending(false);
         user.setPassword(passwordEncoder.encode(passwordDto.getPassword()));
         userRepository.save(user);
 
@@ -242,11 +241,11 @@ public class AuthenticationService {
 
     private Role resolveRole(String email) {
         String domain = email.substring(email.indexOf('@') + 1).toLowerCase();
-        return (domain.equals("hse.ru") || domain.equals("gmail.com")) ? Role.ADMIN : Role.USER;
+        return (domain.equals("edu.hse.ru") || domain.equals("hse.ru")) ? Role.ADMIN : Role.USER;
     }
 
     private String generateVerificationCode() {
-        Random random = new Random();
+        SecureRandom random = new SecureRandom();
         int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);
     }
