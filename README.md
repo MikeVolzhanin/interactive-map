@@ -145,3 +145,25 @@ cp services/applicants-service/src/main/resources/application-example.yml \
 cd services/applicants-service
 mvn spring-boot:run
 ```
+
+### Local SonarQube
+
+SonarQube запускается отдельным Docker Compose profile, чтобы обычный локальный старт приложения не поднимал его автоматически:
+
+```bash
+cd deploy
+docker-compose --profile quality up -d sonarqube
+```
+
+После старта UI доступен на http://localhost:9000. Логин по умолчанию: `admin`, пароль: `admin`; при первом входе SonarQube попросит сменить пароль.
+
+Для анализа `applicants-service` создайте local project token в SonarQube и запустите:
+
+```bash
+cd services/applicants-service
+mvn verify sonar:sonar \
+  -Dsonar.host.url=http://localhost:9000 \
+  -Dsonar.token=<your-local-sonarqube-token>
+```
+
+JaCoCo XML-отчёт будет создан в `target/site/jacoco/jacoco.xml` и передан в SonarQube через настройки Maven.

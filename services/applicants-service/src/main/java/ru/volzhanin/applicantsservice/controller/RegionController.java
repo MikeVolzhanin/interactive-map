@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +35,11 @@ public class RegionController {
     private final RegionService regionService;
 
     @Operation(summary = "Список всех регионов")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Список регионов",
-                    content = @Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = RegionDto.class)))),
-            @ApiResponse(responseCode = "401", description = "Не авторизован",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Список регионов",
+            content = @Content(mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = RegionDto.class))))
+    @ApiResponse(responseCode = "401", description = "Не авторизован",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public List<RegionDto> getAll() {
@@ -50,14 +47,12 @@ public class RegionController {
     }
 
     @Operation(summary = "Получить регион по ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Регион найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = RegionDto.class))),
-            @ApiResponse(responseCode = "404", description = "Регион не найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Регион найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = RegionDto.class)))
+    @ApiResponse(responseCode = "404", description = "Регион не найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public RegionDto getById(
@@ -67,12 +62,10 @@ public class RegionController {
     }
 
     @Operation(summary = "Создать регион")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Регион создан",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = RegionDto.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "201", description = "Регион создан",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = RegionDto.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
@@ -81,14 +74,12 @@ public class RegionController {
     }
 
     @Operation(summary = "Обновить регион")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Регион обновлён",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = RegionDto.class))),
-            @ApiResponse(responseCode = "404", description = "Регион не найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Регион обновлён",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = RegionDto.class)))
+    @ApiResponse(responseCode = "404", description = "Регион не найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public RegionDto update(
@@ -99,14 +90,12 @@ public class RegionController {
     }
 
     @Operation(summary = "Удалить регион")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Регион удалён",
-                    content = @Content),
-            @ApiResponse(responseCode = "404", description = "Регион не найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "204", description = "Регион удалён",
+            content = @Content)
+    @ApiResponse(responseCode = "404", description = "Регион не найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")

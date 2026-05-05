@@ -115,8 +115,9 @@ class EducationLevelServiceTest {
     @Test
     void updateEducationLevelById_notFound_throwsResourceNotFoundException() {
         when(educationLevelRepository.findById(99)).thenReturn(Optional.empty());
+        EducationLevelDto request = buildDto(99, "X");
 
-        assertThatThrownBy(() -> educationLevelService.updateEducationLevelById(99, buildDto(99, "X")))
+        assertThatThrownBy(() -> educationLevelService.updateEducationLevelById(99, request))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 

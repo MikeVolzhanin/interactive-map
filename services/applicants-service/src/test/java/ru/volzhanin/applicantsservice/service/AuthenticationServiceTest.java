@@ -1,5 +1,6 @@
 package ru.volzhanin.applicantsservice.service;
 
+import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,7 +89,7 @@ class AuthenticationServiceTest {
     // ===== signup =====
 
     @Test
-    void signup_newUser_savesUserAndSendsEmail() throws Exception {
+    void signup_newUser_savesUserAndSendsEmail() throws MessagingException {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(PASSWORD)).thenReturn("encoded");
         when(templateEngine.process(anyString(), any(Context.class))).thenReturn("<html/>");
@@ -102,27 +103,29 @@ class AuthenticationServiceTest {
     @Test
     void signup_existingEmail_throwsUserAlreadyExistsException() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(new User()));
+        LoginRegisterUserDto request = new LoginRegisterUserDto(PASSWORD, EMAIL);
 
-        assertThatThrownBy(() -> authenticationService.signup(new LoginRegisterUserDto(PASSWORD, EMAIL)))
+        assertThatThrownBy(() -> authenticationService.signup(request))
             .isInstanceOf(UserAlreadyExistsException.class);
 
         verify(userRepository, never()).save(any());
     }
 
     @Test
-    void signup_emailSendFails_throwsEmailSendException() throws Exception {
+    void signup_emailSendFails_throwsEmailSendException() throws MessagingException {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(anyString())).thenReturn("encoded");
         when(templateEngine.process(anyString(), any())).thenReturn("<html/>");
-        doThrow(new jakarta.mail.MessagingException("fail"))
+        doThrow(new MessagingException("fail"))
             .when(emailService).sendVerificationEmail(anyString(), anyString(), anyString());
+        LoginRegisterUserDto request = new LoginRegisterUserDto(PASSWORD, EMAIL);
 
-        assertThatThrownBy(() -> authenticationService.signup(new LoginRegisterUserDto(PASSWORD, EMAIL)))
+        assertThatThrownBy(() -> authenticationService.signup(request))
             .isInstanceOf(EmailSendException.class);
     }
 
     @Test
-    void signup_adminEmail_assignsAdminRole() throws Exception {
+    void signup_adminEmail_assignsAdminRole() {
         String adminEmail = "admin@hse.ru";
         when(userRepository.findByEmail(adminEmail)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(anyString())).thenReturn("encoded");
@@ -152,8 +155,9 @@ class AuthenticationServiceTest {
     @Test
     void authenticate_userNotFound_throwsUserNotFoundException() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        LoginRegisterUserDto request = new LoginRegisterUserDto(PASSWORD, EMAIL);
 
-        assertThatThrownBy(() -> authenticationService.authenticate(new LoginRegisterUserDto(PASSWORD, EMAIL)))
+        assertThatThrownBy(() -> authenticationService.authenticate(request))
             .isInstanceOf(UserNotFoundException.class);
     }
 
@@ -161,8 +165,9 @@ class AuthenticationServiceTest {
     void authenticate_unverifiedAccount_throwsAccountNotVerifiedException() {
         User user = unverifiedUser();
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        LoginRegisterUserDto request = new LoginRegisterUserDto(PASSWORD, EMAIL);
 
-        assertThatThrownBy(() -> authenticationService.authenticate(new LoginRegisterUserDto(PASSWORD, EMAIL)))
+        assertThatThrownBy(() -> authenticationService.authenticate(request))
             .isInstanceOf(AccountNotVerifiedException.class);
     }
 
@@ -172,8 +177,9 @@ class AuthenticationServiceTest {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
             .thenThrow(new BadCredentialsException("bad credentials"));
+        LoginRegisterUserDto request = new LoginRegisterUserDto("wrong", EMAIL);
 
-        assertThatThrownBy(() -> authenticationService.authenticate(new LoginRegisterUserDto("wrong", EMAIL)))
+        assertThatThrownBy(() -> authenticationService.authenticate(request))
             .isInstanceOf(BadCredentialsException.class);
     }
 
@@ -196,8 +202,9 @@ class AuthenticationServiceTest {
     @Test
     void verifyUser_userNotFound_throwsUserNotFoundException() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        VerifyUserDto request = new VerifyUserDto(EMAIL, "123456");
 
-        assertThatThrownBy(() -> authenticationService.verifyUser(new VerifyUserDto(EMAIL, "123456")))
+        assertThatThrownBy(() -> authenticationService.verifyUser(request))
             .isInstanceOf(UserNotFoundException.class);
     }
 
@@ -207,8 +214,9 @@ class AuthenticationServiceTest {
         user.setVerificationCode("123456");
         user.setVerificationCodeExpiresAt(LocalDateTime.now().minusMinutes(1));
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        VerifyUserDto request = new VerifyUserDto(EMAIL, "123456");
 
-        assertThatThrownBy(() -> authenticationService.verifyUser(new VerifyUserDto(EMAIL, "123456")))
+        assertThatThrownBy(() -> authenticationService.verifyUser(request))
             .isInstanceOf(VerificationCodeExpiredException.class);
     }
 
@@ -218,15 +226,16 @@ class AuthenticationServiceTest {
         user.setVerificationCode("123456");
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(10));
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        VerifyUserDto request = new VerifyUserDto(EMAIL, "999999");
 
-        assertThatThrownBy(() -> authenticationService.verifyUser(new VerifyUserDto(EMAIL, "999999")))
+        assertThatThrownBy(() -> authenticationService.verifyUser(request))
             .isInstanceOf(InvalidVerificationCodeException.class);
     }
 
     // ===== resendVerificationCode =====
 
     @Test
-    void resendVerificationCode_unverifiedUser_sendsNewCode() throws Exception {
+    void resendVerificationCode_unverifiedUser_sendsNewCode() throws MessagingException {
         User user = unverifiedUser();
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(templateEngine.process(anyString(), any())).thenReturn("<html/>");
@@ -267,12 +276,50 @@ class AuthenticationServiceTest {
         verify(refreshTokenRepository).delete(token);
     }
 
+    @Test
+    void logout_refreshTokenMissing_throwsUserNotFoundException() {
+        User user = verifiedUser();
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(refreshTokenRepository.findByUserId(user.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authenticationService.logout())
+            .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    void resetPassword_existingUser_marksResetPendingAndSendsEmail() throws MessagingException {
+        User user = verifiedUser();
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(templateEngine.process(anyString(), any())).thenReturn("<html/>");
+        when(refreshTokenRepository.findByUserId(user.getId())).thenReturn(Optional.of(refreshToken("token")));
+
+        authenticationService.resetPassword(EMAIL);
+
+        assertThat(user.isPasswordResetPending()).isTrue();
+        assertThat(user.isEmailVerified()).isFalse();
+        assertThat(user.getVerificationCode()).isNotBlank();
+        verify(userRepository).save(user);
+        verify(refreshTokenRepository).delete(any(RefreshToken.class));
+        verify(emailService).sendVerificationEmail(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void resetPassword_missingUser_doesNotSaveOrSendEmail() throws MessagingException {
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+        authenticationService.resetPassword(EMAIL);
+
+        verify(userRepository, never()).save(any());
+        verify(emailService, never()).sendVerificationEmail(anyString(), anyString(), anyString());
+    }
+
     // ===== changePassword =====
 
     @Test
     void changePassword_validReset_updatesPassword() {
         User user = verifiedUser();
         user.setPassword("reset");
+        user.setPasswordResetPending(true);
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(anyString())).thenReturn("newEncoded");
 
@@ -280,13 +327,15 @@ class AuthenticationServiceTest {
 
         verify(userRepository).save(user);
         assertThat(user.getPassword()).isEqualTo("newEncoded");
+        assertThat(user.isPasswordResetPending()).isFalse();
     }
 
     @Test
     void changePassword_userNotFound_throwsUserNotFoundException() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        PasswordDto request = new PasswordDto(EMAIL, "new");
 
-        assertThatThrownBy(() -> authenticationService.changePassword(new PasswordDto(EMAIL, "new")))
+        assertThatThrownBy(() -> authenticationService.changePassword(request))
             .isInstanceOf(UserNotFoundException.class);
     }
 

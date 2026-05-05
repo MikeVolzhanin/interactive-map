@@ -33,16 +33,20 @@ import ru.volzhanin.applicantsservice.repository.UsersRepository;
 import ru.volzhanin.applicantsservice.service.email.DefaultEmailService;
 import ru.volzhanin.applicantsservice.service.jwt.JwtService;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 @AllArgsConstructor
 @Slf4j
 public class AuthenticationService {
+    private static final String USER_NOT_FOUND = "Пользователь не найден";
+
+    private final SecureRandom random = new SecureRandom();
+
     private final AuthenticationManager authenticationManager;
     private final UsersRepository userRepository;
     private final DefaultEmailService emailService;
@@ -71,8 +75,6 @@ public class AuthenticationService {
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEmailVerified(false);
-
-        log.debug("Сгенерирован код верификации для {}: {}", input.getEmail(), user.getVerificationCode());
 
         try {
             sendVerificationEmail(user);
@@ -115,7 +117,7 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> {
                     log.warn("Попытка верификации несуществующего аккаунта: email={}", input.getEmail());
-                    return new UserNotFoundException("Пользователь не найден");
+                    return new UserNotFoundException(USER_NOT_FOUND);
                 });
 
         if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
@@ -143,7 +145,7 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("Повторная отправка кода для несуществующего пользователя: {}", email);
-                    return new UserNotFoundException("Пользователь не найден");
+                    return new UserNotFoundException(USER_NOT_FOUND);
                 });
 
         if (user.isEnabled()) {
@@ -190,7 +192,7 @@ public class AuthenticationService {
         }
 
         User user = optionalUser.get();
-        user.setPassword("reset");
+        user.setPasswordResetPending(true);
         user.setEmailVerified(false);
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
@@ -206,12 +208,13 @@ public class AuthenticationService {
     @Transactional
     public void changePassword(PasswordDto passwordDto) {
         User user = userRepository.findByEmail(passwordDto.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND));
 
-        if (!Objects.requireNonNull(user.getPassword()).equals("reset") || !user.isEmailVerified()) {
-            throw new UserNotFoundException("Пользователь не найден");
+        if (!user.isPasswordResetPending() || !user.isEmailVerified()) {
+            throw new UserNotFoundException(USER_NOT_FOUND);
         }
 
+        user.setPasswordResetPending(false);
         user.setPassword(passwordEncoder.encode(passwordDto.getPassword()));
         userRepository.save(user);
 
@@ -223,7 +226,7 @@ public class AuthenticationService {
         String email = Objects.requireNonNull(authentication).getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
 
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new UserNotFoundException("Refresh token не найден"));
@@ -242,11 +245,10 @@ public class AuthenticationService {
 
     private Role resolveRole(String email) {
         String domain = email.substring(email.indexOf('@') + 1).toLowerCase();
-        return (domain.equals("hse.ru") || domain.equals("gmail.com")) ? Role.ADMIN : Role.USER;
+        return (domain.equals("edu.hse.ru") || domain.equals("hse.ru")) ? Role.ADMIN : Role.USER;
     }
 
     private String generateVerificationCode() {
-        Random random = new Random();
         int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);
     }

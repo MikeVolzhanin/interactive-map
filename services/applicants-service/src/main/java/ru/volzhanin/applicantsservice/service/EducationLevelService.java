@@ -14,6 +14,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class EducationLevelService {
+    private static final String EDUCATION_LEVEL_NOT_FOUND = "Уровень образования не найден: ";
+
     private final EducationLevelRepository educationLevelRepository;
     private final EducationLevelMapper educationLevelMapper;
 
@@ -25,7 +27,7 @@ public class EducationLevelService {
     @Transactional(readOnly = true)
     public EducationLevelDto getEducationLevelById(Integer id) {
         EducationLevel entity = educationLevelRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Уровень образования не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(EDUCATION_LEVEL_NOT_FOUND + id));
         return educationLevelMapper.toDto(entity);
     }
 
@@ -38,7 +40,7 @@ public class EducationLevelService {
     @Transactional
     public EducationLevelDto updateEducationLevelById(Integer id, EducationLevelDto dto) {
         EducationLevel entity = educationLevelRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Уровень образования не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(EDUCATION_LEVEL_NOT_FOUND + id));
         educationLevelMapper.updateEntityFromDto(dto, entity);
         return educationLevelMapper.toDto(educationLevelRepository.save(entity));
     }
@@ -46,7 +48,7 @@ public class EducationLevelService {
     @Transactional
     public void delete(Integer id) {
         EducationLevel entity = educationLevelRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Уровень образования не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(EDUCATION_LEVEL_NOT_FOUND + id));
         educationLevelRepository.delete(entity);
     }
 }

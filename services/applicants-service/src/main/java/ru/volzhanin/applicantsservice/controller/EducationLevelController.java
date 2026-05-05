@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -37,13 +36,11 @@ public class EducationLevelController {
     private final EducationLevelService educationLevelService;
 
     @Operation(summary = "Список всех уровней образования")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Список уровней образования",
-                    content = @Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = EducationLevelDto.class)))),
-            @ApiResponse(responseCode = "401", description = "Не авторизован",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Список уровней образования",
+            content = @Content(mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = EducationLevelDto.class))))
+    @ApiResponse(responseCode = "401", description = "Не авторизован",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public List<EducationLevelDto> getAllEducationLevels() {
@@ -51,14 +48,12 @@ public class EducationLevelController {
     }
 
     @Operation(summary = "Получить уровень образования по ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Уровень образования найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = EducationLevelDto.class))),
-            @ApiResponse(responseCode = "404", description = "Уровень образования не найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Уровень образования найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = EducationLevelDto.class)))
+    @ApiResponse(responseCode = "404", description = "Уровень образования не найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public EducationLevelDto getEducationLevel(
@@ -68,14 +63,12 @@ public class EducationLevelController {
     }
 
     @Operation(summary = "Создать уровень образования")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Уровень образования создан",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = EducationLevelDto.class))),
-            @ApiResponse(responseCode = "400", description = "Ошибка валидации",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "201", description = "Уровень образования создан",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = EducationLevelDto.class)))
+    @ApiResponse(responseCode = "400", description = "Ошибка валидации",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
@@ -84,16 +77,14 @@ public class EducationLevelController {
     }
 
     @Operation(summary = "Обновить уровень образования")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Уровень образования обновлён",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = EducationLevelDto.class))),
-            @ApiResponse(responseCode = "400", description = "Ошибка валидации",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Уровень образования не найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Уровень образования обновлён",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = EducationLevelDto.class)))
+    @ApiResponse(responseCode = "400", description = "Ошибка валидации",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "404", description = "Уровень образования не найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public EducationLevelDto update(
@@ -104,14 +95,12 @@ public class EducationLevelController {
     }
 
     @Operation(summary = "Удалить уровень образования")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Уровень образования удалён",
-                    content = @Content),
-            @ApiResponse(responseCode = "404", description = "Уровень образования не найден",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Недостаточно прав",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "204", description = "Уровень образования удалён",
+            content = @Content)
+    @ApiResponse(responseCode = "404", description = "Уровень образования не найден",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponse(responseCode = "403", description = "Недостаточно прав",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")

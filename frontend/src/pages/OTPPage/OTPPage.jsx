@@ -3,6 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import AuthCard from '../../components/AuthCard/AuthCard.jsx'
 import OTPInput from '../../components/OTPInput/OTPInput.jsx'
 import { verify, resendCode, login } from '../../api/auth.js'
+
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return null
+  }
+}
 import styles from './OTPPage.module.css'
 
 const OTP_LENGTH = 6
@@ -71,7 +79,14 @@ export default function OTPPage() {
         const { accessToken, refreshToken } = await login(email, password)
         localStorage.setItem('accessToken', accessToken)
         localStorage.setItem('refreshToken', refreshToken)
-        navigate('/onboarding', { replace: true })
+
+        const payload = parseJwt(accessToken)
+        const roles = payload?.roles ?? payload?.authorities ?? payload?.role ?? []
+        const isAdmin = Array.isArray(roles)
+          ? roles.includes('ROLE_ADMIN')
+          : roles === 'ROLE_ADMIN'
+
+        navigate(isAdmin ? '/admin' : '/onboarding', { replace: true })
       }
     } catch (err) {
       setServerError(err.message)

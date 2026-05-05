@@ -14,6 +14,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class InterestService {
+    private static final String INTEREST_NOT_FOUND = "Интерес не найден: ";
+
     private final InterestRepository interestRepository;
     private final InterestMapper interestMapper;
 
@@ -25,7 +27,7 @@ public class InterestService {
     @Transactional(readOnly = true)
     public InterestDto getByInterestId(Long id) {
         Interest interest = interestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Интерес не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(INTEREST_NOT_FOUND + id));
         return interestMapper.toDto(interest);
     }
 
@@ -38,7 +40,7 @@ public class InterestService {
     @Transactional
     public InterestDto update(Long id, InterestDto dto) {
         Interest interest = interestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Интерес не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(INTEREST_NOT_FOUND + id));
         interestMapper.updateFromDto(dto, interest);
         return interestMapper.toDto(interestRepository.save(interest));
     }
@@ -46,7 +48,7 @@ public class InterestService {
     @Transactional
     public void delete(Long id) {
         Interest interest = interestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Интерес не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(INTEREST_NOT_FOUND + id));
         interestRepository.delete(interest);
     }
 }

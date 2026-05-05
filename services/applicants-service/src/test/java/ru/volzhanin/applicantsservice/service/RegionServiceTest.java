@@ -16,7 +16,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -98,8 +97,9 @@ class RegionServiceTest {
     @Test
     void update_notFound_throwsResourceNotFoundException() {
         when(regionRepository.findById(99L)).thenReturn(Optional.empty());
+        RegionDto request = buildDto(99L, "X");
 
-        assertThatThrownBy(() -> regionService.update(99L, buildDto(99L, "X")))
+        assertThatThrownBy(() -> regionService.update(99L, request))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 

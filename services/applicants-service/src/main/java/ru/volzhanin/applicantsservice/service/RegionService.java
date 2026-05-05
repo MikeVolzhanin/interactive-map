@@ -14,6 +14,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class RegionService {
+    private static final String REGION_NOT_FOUND = "Регион не найден: ";
+
     private final RegionRepository regionRepository;
     private final RegionMapper regionMapper;
 
@@ -25,7 +27,7 @@ public class RegionService {
     @Transactional(readOnly = true)
     public RegionDto getById(Long id) {
         Region region = regionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Регион не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(REGION_NOT_FOUND + id));
         return regionMapper.toDto(region);
     }
 
@@ -38,7 +40,7 @@ public class RegionService {
     @Transactional
     public RegionDto update(Long id, RegionDto dto) {
         Region region = regionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Регион не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(REGION_NOT_FOUND + id));
         regionMapper.updateFromDto(dto, region);
         return regionMapper.toDto(regionRepository.save(region));
     }
@@ -46,7 +48,7 @@ public class RegionService {
     @Transactional
     public void delete(Long id) {
         Region region = regionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Регион не найден: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(REGION_NOT_FOUND + id));
         regionRepository.delete(region);
     }
 }
