@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class UserService {
+    private static final String USER_NOT_FOUND = "Пользователь не найден";
+
     private final UsersRepository userRepository;
     private final EducationLevelRepository educationLevelRepository;
     private final RegionRepository regionRepository;
@@ -50,11 +52,8 @@ public class UserService {
 
     @Transactional
     public void addInfo(UserInfoDto input) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = Objects.requireNonNull(authentication).getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+        User user = getCurrentUser();
+        String email = user.getEmail();
 
         Optional<User> existingUser = userRepository.findByPhoneNumber(input.getPhoneNumber());
         if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
@@ -86,13 +85,9 @@ public class UserService {
     }
 
     public UserInfoDto getUserInfo() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = Objects.requireNonNull(authentication).getName();
+        User user = getCurrentUser();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
-
-        log.info("Предоставлена информация по профилю для email={}", email);
+        log.info("Предоставлена информация по профилю для email={}", user.getEmail());
 
         return UserInfoDto.builder()
                 .firstName(user.getFirstName())
@@ -109,16 +104,12 @@ public class UserService {
 
     @Transactional
     public void changeInterests(UserInterestsDto input) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = Objects.requireNonNull(authentication).getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+        User user = getCurrentUser();
 
         user.setInterests(new HashSet<>(interestRepository.findAllById(input.getInterestIds())));
         userRepository.save(user);
 
-        log.info("Интересы обновлены: email={}", email);
+        log.info("Интересы обновлены: email={}", user.getEmail());
     }
 
     public void writeUsersToStream(List<String> fields, OutputStream os) throws IOException {
@@ -127,62 +118,94 @@ public class UserService {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Users");
 
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerFont.setColor(IndexedColors.WHITE.getIndex());
-            headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            headerStyle.setAlignment(HorizontalAlignment.CENTER);
-            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            applyBorders(headerStyle);
-
-            CellStyle dataStyle = workbook.createCellStyle();
-            dataStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            dataStyle.setWrapText(true);
-            applyBorders(dataStyle);
-
-            Row headerRow = sheet.createRow(0);
-            headerRow.setHeightInPoints(24);
-            for (int i = 0; i < fields.size(); i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(fields.get(i));
-                cell.setCellStyle(headerStyle);
-            }
-
+            writeHeaderRow(sheet, fields, createHeaderStyle(workbook));
             sheet.createFreezePane(0, 1);
-
-            int rowNum = 1;
-            for (User user : users) {
-                Row row = sheet.createRow(rowNum++);
-                row.setHeightInPoints(20);
-                for (int i = 0; i < fields.size(); i++) {
-                    String value = switch (fields.get(i)) {
-                        case "firstName" -> user.getFirstName();
-                        case "lastName" -> user.getLastName();
-                        case "middleName" -> user.getMiddleName();
-                        case "email" -> user.getEmail();
-                        case "phoneNumber" -> user.getPhoneNumber();
-                        case "yearOfAdmission" -> user.getYearOfAdmission() != null ? user.getYearOfAdmission().toString() : "";
-                        case "educationLevel" -> user.getEducationLevel() != null ? user.getEducationLevel().getLevel() : "";
-                        case "region" -> user.getRegion() != null ? user.getRegion().getName() : "";
-                        case "registeredAt" -> user.getRegisteredAt() != null ? user.getRegisteredAt().toString() : "";
-                        case "interests" -> user.getInterests().stream().map(Interest::getName).collect(Collectors.joining(", "));
-                        default -> "";
-                    };
-                    Cell cell = row.createCell(i);
-                    cell.setCellValue(value != null ? value : "");
-                    cell.setCellStyle(dataStyle);
-                }
-            }
-
-            for (int i = 0; i < fields.size(); i++) {
-                sheet.autoSizeColumn(i);
-                sheet.setColumnWidth(i, (int) (sheet.getColumnWidth(i) * 1.2));
-            }
+            writeUserRows(sheet, fields, users, createDataStyle(workbook));
+            autoSizeColumns(sheet, fields.size());
 
             workbook.write(os);
+        }
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = Objects.requireNonNull(authentication).getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND));
+    }
+
+    private CellStyle createHeaderStyle(Workbook workbook) {
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setColor(IndexedColors.WHITE.getIndex());
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyBorders(headerStyle);
+        return headerStyle;
+    }
+
+    private CellStyle createDataStyle(Workbook workbook) {
+        CellStyle dataStyle = workbook.createCellStyle();
+        dataStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        dataStyle.setWrapText(true);
+        applyBorders(dataStyle);
+        return dataStyle;
+    }
+
+    private void writeHeaderRow(Sheet sheet, List<String> fields, CellStyle headerStyle) {
+        Row headerRow = sheet.createRow(0);
+        headerRow.setHeightInPoints(24);
+        for (int i = 0; i < fields.size(); i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(fields.get(i));
+            cell.setCellStyle(headerStyle);
+        }
+    }
+
+    private void writeUserRows(Sheet sheet, List<String> fields, List<User> users, CellStyle dataStyle) {
+        int rowNum = 1;
+        for (User user : users) {
+            writeUserRow(sheet.createRow(rowNum++), fields, user, dataStyle);
+        }
+    }
+
+    private void writeUserRow(Row row, List<String> fields, User user, CellStyle dataStyle) {
+        row.setHeightInPoints(20);
+        for (int i = 0; i < fields.size(); i++) {
+            Cell cell = row.createCell(i);
+            cell.setCellValue(nullToEmpty(getFieldValue(user, fields.get(i))));
+            cell.setCellStyle(dataStyle);
+        }
+    }
+
+    private String getFieldValue(User user, String field) {
+        return switch (field) {
+            case "firstName" -> user.getFirstName();
+            case "lastName" -> user.getLastName();
+            case "middleName" -> user.getMiddleName();
+            case "email" -> user.getEmail();
+            case "phoneNumber" -> user.getPhoneNumber();
+            case "yearOfAdmission" -> user.getYearOfAdmission() != null ? user.getYearOfAdmission().toString() : "";
+            case "educationLevel" -> user.getEducationLevel() != null ? user.getEducationLevel().getLevel() : "";
+            case "region" -> user.getRegion() != null ? user.getRegion().getName() : "";
+            case "registeredAt" -> user.getRegisteredAt() != null ? user.getRegisteredAt().toString() : "";
+            case "interests" -> user.getInterests().stream().map(Interest::getName).collect(Collectors.joining(", "));
+            default -> "";
+        };
+    }
+
+    private String nullToEmpty(String value) {
+        return value != null ? value : "";
+    }
+
+    private void autoSizeColumns(Sheet sheet, int columnCount) {
+        for (int i = 0; i < columnCount; i++) {
+            sheet.autoSizeColumn(i);
+            sheet.setColumnWidth(i, (int) (sheet.getColumnWidth(i) * 1.2));
         }
     }
 

@@ -20,7 +20,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,8 +52,9 @@ class RefreshTokenServiceTest {
     @Test
     void refreshToken_tokenNotFound_throwsRefreshTokenNotFoundException() {
         when(refreshTokenRepository.findByToken("missing")).thenReturn(Optional.empty());
+        RefreshTokenRequest request = new RefreshTokenRequest("missing");
 
-        assertThatThrownBy(() -> refreshTokenService.refreshToken(new RefreshTokenRequest("missing")))
+        assertThatThrownBy(() -> refreshTokenService.refreshToken(request))
             .isInstanceOf(RefreshTokenNotFoundException.class);
     }
 
@@ -63,8 +63,9 @@ class RefreshTokenServiceTest {
         User user = buildUser();
         RefreshToken token = expiredToken(user);
         when(refreshTokenRepository.findByToken("expired-refresh")).thenReturn(Optional.of(token));
+        RefreshTokenRequest request = new RefreshTokenRequest("expired-refresh");
 
-        assertThatThrownBy(() -> refreshTokenService.refreshToken(new RefreshTokenRequest("expired-refresh")))
+        assertThatThrownBy(() -> refreshTokenService.refreshToken(request))
             .isInstanceOf(RefreshTokenExpiredException.class);
 
         verify(refreshTokenRepository).delete(token);

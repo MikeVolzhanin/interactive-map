@@ -21,6 +21,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.io.Serial;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
@@ -36,6 +37,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 @Builder
 @Table(name = "users")
 public class User implements UserDetails {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     //основная информация
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

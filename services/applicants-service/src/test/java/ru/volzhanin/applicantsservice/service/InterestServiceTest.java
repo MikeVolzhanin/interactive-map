@@ -115,8 +115,9 @@ class InterestServiceTest {
     @Test
     void update_notFound_throwsResourceNotFoundException() {
         when(interestRepository.findById(99L)).thenReturn(Optional.empty());
+        InterestDto request = buildDto(99L, "X");
 
-        assertThatThrownBy(() -> interestService.update(99L, buildDto(99L, "X")))
+        assertThatThrownBy(() -> interestService.update(99L, request))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 

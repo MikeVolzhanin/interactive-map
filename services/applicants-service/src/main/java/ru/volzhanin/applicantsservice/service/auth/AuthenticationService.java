@@ -43,6 +43,10 @@ import java.util.Optional;
 @AllArgsConstructor
 @Slf4j
 public class AuthenticationService {
+    private static final String USER_NOT_FOUND = "Пользователь не найден";
+
+    private final SecureRandom random = new SecureRandom();
+
     private final AuthenticationManager authenticationManager;
     private final UsersRepository userRepository;
     private final DefaultEmailService emailService;
@@ -113,7 +117,7 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> {
                     log.warn("Попытка верификации несуществующего аккаунта: email={}", input.getEmail());
-                    return new UserNotFoundException("Пользователь не найден");
+                    return new UserNotFoundException(USER_NOT_FOUND);
                 });
 
         if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
@@ -141,7 +145,7 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("Повторная отправка кода для несуществующего пользователя: {}", email);
-                    return new UserNotFoundException("Пользователь не найден");
+                    return new UserNotFoundException(USER_NOT_FOUND);
                 });
 
         if (user.isEnabled()) {
@@ -204,10 +208,10 @@ public class AuthenticationService {
     @Transactional
     public void changePassword(PasswordDto passwordDto) {
         User user = userRepository.findByEmail(passwordDto.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND));
 
         if (!user.isPasswordResetPending() || !user.isEmailVerified()) {
-            throw new UserNotFoundException("Пользователь не найден");
+            throw new UserNotFoundException(USER_NOT_FOUND);
         }
 
         user.setPasswordResetPending(false);
@@ -222,7 +226,7 @@ public class AuthenticationService {
         String email = Objects.requireNonNull(authentication).getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
 
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new UserNotFoundException("Refresh token не найден"));
@@ -245,7 +249,6 @@ public class AuthenticationService {
     }
 
     private String generateVerificationCode() {
-        SecureRandom random = new SecureRandom();
         int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);
     }
