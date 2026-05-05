@@ -1,0 +1,2 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS password_reset_pending BOOLEAN NOT NULL DEFAULT FALSE;
