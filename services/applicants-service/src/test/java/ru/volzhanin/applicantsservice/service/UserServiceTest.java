@@ -207,7 +207,7 @@ class UserServiceTest {
             .emailVerified(true)
             .build();
         sparseUser.setInterests(new java.util.HashSet<>());
-        when(userRepository.findByRole(Role.USER)).thenReturn(List.of(fullUser, sparseUser));
+        when(userRepository.findByRoleAndEmailVerifiedTrue(Role.USER)).thenReturn(List.of(fullUser, sparseUser));
         List<String> fields = List.of(
             "firstName",
             "lastName",
@@ -238,6 +238,22 @@ class UserServiceTest {
             assertThat(workbook.getSheet("Users").getRow(2).getCell(6).getStringCellValue()).isEmpty();
             assertThat(workbook.getSheet("Users").getRow(2).getCell(7).getStringCellValue()).isEmpty();
             assertThat(workbook.getSheet("Users").getRow(2).getCell(8).getStringCellValue()).isEmpty();
+        }
+    }
+
+    @Test
+    void writeUsersToStream_exportsOnlyVerifiedUsers() throws IOException {
+        User verifiedUser = buildUser();
+        when(userRepository.findByRoleAndEmailVerifiedTrue(Role.USER)).thenReturn(List.of(verifiedUser));
+        List<String> fields = List.of("email");
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        userService.writeUsersToStream(fields, outputStream);
+
+        verify(userRepository).findByRoleAndEmailVerifiedTrue(Role.USER);
+        try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(outputStream.toByteArray()))) {
+            assertThat(workbook.getSheet("Users").getRow(1).getCell(0).getStringCellValue()).isEqualTo(EMAIL);
+            assertThat(workbook.getSheet("Users").getRow(2)).isNull();
         }
     }
 
