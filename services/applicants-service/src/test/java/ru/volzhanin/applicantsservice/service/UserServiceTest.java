@@ -84,6 +84,24 @@ class UserServiceTest {
     }
 
     @Test
+    void getUserInfo_incompleteProfile_returnsDtoWithEmptyOptionalFields() {
+        User user = User.builder()
+            .id(1L)
+            .email(EMAIL)
+            .role(Role.USER)
+            .emailVerified(true)
+            .build();
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        UserInfoDto result = userService.getUserInfo();
+
+        assertThat(result.getEducationLevelId()).isNull();
+        assertThat(result.getRegionId()).isNull();
+        assertThat(result.getInterestIds()).isEmpty();
+        assertThat(result.getProfileCompleted()).isFalse();
+    }
+
+    @Test
     void getUserInfo_userNotFound_throwsUserNotFoundException() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
