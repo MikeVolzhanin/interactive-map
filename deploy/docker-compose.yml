@@ -3,13 +3,13 @@ services:
     image: postgres:15
     container_name: interactive-map-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: interactive-map-db
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-interactive-map-db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d interactive-map-db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME:-postgres} -d ${POSTGRES_DB:-interactive-map-db}" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -23,9 +23,9 @@ services:
     volumes:
       - ../db:/liquibase/db:ro
     command: >
-      --url=jdbc:postgresql://interactive-map-db:5432/interactive-map-db
-      --username=postgres
-      --password=postgres
+      --url=${SPRING_DATASOURCE_URL:-jdbc:postgresql://interactive-map-db:5432/interactive-map-db}
+      --username=${SPRING_DATASOURCE_USERNAME:-postgres}
+      --password=${SPRING_DATASOURCE_PASSWORD:-postgres}
       --search-path=/liquibase/db
       --changelog-file=db.changelog-master.xml
       update
@@ -49,6 +49,9 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     container_name: interactive-map-frontend
+    depends_on:
+      applicants-service:
+        condition: service_started
     ports:
       - "3000:80"
     restart: unless-stopped
