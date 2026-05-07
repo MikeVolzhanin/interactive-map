@@ -59,22 +59,23 @@ public class AuthenticationService {
     public void signup(LoginRegisterUserDto input) {
         log.info("Начало регистрации для email: {}", input.getEmail());
 
-        if (userRepository.findByEmail(input.getEmail()).isPresent()) {
+        Optional<User> existingUser = userRepository.findByEmail(input.getEmail());
+        if (existingUser.isPresent() && existingUser.get().isEmailVerified()) {
             log.warn("Пользователь уже существует: email={}", input.getEmail());
             throw new UserAlreadyExistsException("Пользователь с такой почтой уже существует");
         }
 
         Role role = resolveRole(input.getEmail());
 
-        User user = User.builder()
+        User user = existingUser.orElseGet(() -> User.builder()
                 .email(input.getEmail())
-                .password(passwordEncoder.encode(input.getPassword()))
                 .role(role)
-                .build();
+                .build());
 
-        user.setVerificationCode(generateVerificationCode());
-        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
-        user.setEmailVerified(false);
+        user.setPassword(passwordEncoder.encode(input.getPassword()));
+        user.setRole(role);
+        user.setPasswordResetPending(false);
+        prepareVerification(user);
 
         try {
             sendVerificationEmail(user);
@@ -251,5 +252,12 @@ public class AuthenticationService {
     private String generateVerificationCode() {
         int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);
+    }
+
+    private void prepareVerification(User user) {
+        user.setVerificationCode(generateVerificationCode());
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
+        user.setVerificationAttemptsLeft(Short.valueOf("3"));
+        user.setEmailVerified(false);
     }
 }

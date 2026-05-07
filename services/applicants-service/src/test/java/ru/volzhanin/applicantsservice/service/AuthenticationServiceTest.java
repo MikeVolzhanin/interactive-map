@@ -102,13 +102,34 @@ class AuthenticationServiceTest {
 
     @Test
     void signup_existingEmail_throwsUserAlreadyExistsException() {
-        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(new User()));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(verifiedUser()));
         LoginRegisterUserDto request = new LoginRegisterUserDto(PASSWORD, EMAIL);
 
         assertThatThrownBy(() -> authenticationService.signup(request))
             .isInstanceOf(UserAlreadyExistsException.class);
 
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void signup_existingUnverifiedEmail_updatesPasswordAndResendsCode() throws MessagingException {
+        User user = unverifiedUser();
+        user.setVerificationCode("111111");
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().minusMinutes(1));
+        user.setVerificationAttemptsLeft(Short.valueOf("0"));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(PASSWORD)).thenReturn("new-encoded");
+        when(templateEngine.process(anyString(), any(Context.class))).thenReturn("<html/>");
+
+        authenticationService.signup(new LoginRegisterUserDto(PASSWORD, EMAIL));
+
+        assertThat(user.getPassword()).isEqualTo("new-encoded");
+        assertThat(user.getVerificationCode()).isNotBlank();
+        assertThat(user.getVerificationCodeExpiresAt()).isAfter(LocalDateTime.now());
+        assertThat(user.getVerificationAttemptsLeft()).isEqualTo(Short.valueOf("3"));
+        assertThat(user.isEmailVerified()).isFalse();
+        verify(userRepository).save(user);
+        verify(emailService).sendVerificationEmail(anyString(), anyString(), anyString());
     }
 
     @Test
