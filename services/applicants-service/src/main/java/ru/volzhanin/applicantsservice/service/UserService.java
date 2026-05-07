@@ -121,7 +121,7 @@ public class UserService {
     }
 
     public void writeUsersToStream(List<String> fields, OutputStream os) throws IOException {
-        List<User> users = userRepository.findByRole(Role.USER);
+        List<User> users = userRepository.findByRoleAndEmailVerifiedTrue(Role.USER);
 
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Users");
