@@ -8,7 +8,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import ru.volzhanin.applicantsservice.dto.user.UserInfoDto;
 import ru.volzhanin.applicantsservice.dto.user.UserInterestsDto;
+import ru.volzhanin.applicantsservice.entity.EducationLevel;
 import ru.volzhanin.applicantsservice.entity.Interest;
+import ru.volzhanin.applicantsservice.entity.Region;
 import ru.volzhanin.applicantsservice.entity.Role;
 import ru.volzhanin.applicantsservice.entity.User;
 import ru.volzhanin.applicantsservice.exception.PhoneAlreadyExistsException;
@@ -37,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -89,15 +92,20 @@ public class UserService {
 
         log.info("Предоставлена информация по профилю для email={}", user.getEmail());
 
+        EducationLevel educationLevel = user.getEducationLevel();
+        Region region = user.getRegion();
+
         return UserInfoDto.builder()
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .middleName(user.getMiddleName())
                 .yearOfAdmission(user.getYearOfAdmission())
                 .phoneNumber(user.getPhoneNumber())
-                .interestIds(user.getInterests().stream().map(Interest::getId).collect(Collectors.toSet()))
-                .educationLevelId(user.getEducationLevel().getId())
-                .regionId(user.getRegion().getId())
+                .interestIds(user.getInterests() != null
+                        ? user.getInterests().stream().map(Interest::getId).collect(Collectors.toSet())
+                        : Set.of())
+                .educationLevelId(educationLevel != null ? educationLevel.getId() : null)
+                .regionId(region != null ? region.getId() : null)
                 .profileCompleted(user.isProfileCompleted())
                 .build();
     }
