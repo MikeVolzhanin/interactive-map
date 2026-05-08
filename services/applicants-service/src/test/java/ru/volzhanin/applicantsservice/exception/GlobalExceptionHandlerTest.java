@@ -19,7 +19,7 @@ class GlobalExceptionHandlerTest {
         assertResponse(handler.handleUserNotFound(new UserNotFoundException("user")), 404, "user");
         assertResponse(handler.handleResourceNotFound(new ResourceNotFoundException("resource")), 404, "resource");
         assertResponse(handler.handleNoResourceFound(
-            new NoResourceFoundException(HttpMethod.GET, "/api/v1/models")), 404, "Ресурс не найден");
+            new NoResourceFoundException(HttpMethod.GET, "/api/v1/models", "api/v1/models")), 404, "Ресурс не найден");
         assertResponse(handler.handleUsernameNotFound(new UsernameNotFoundException("username")), 404, "username");
         assertResponse(handler.handleAccountNotVerified(new AccountNotVerifiedException("verify")), 401, "verify");
         assertResponse(handler.handleRefreshTokenExpired(new RefreshTokenExpiredException("expired")), 401, "expired");
