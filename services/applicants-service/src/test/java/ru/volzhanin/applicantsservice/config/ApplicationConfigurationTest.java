@@ -12,6 +12,7 @@ import ru.volzhanin.applicantsservice.entity.Role;
 import ru.volzhanin.applicantsservice.entity.User;
 import ru.volzhanin.applicantsservice.repository.UsersRepository;
 
+import java.net.http.HttpClient;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,9 +48,11 @@ class ApplicationConfigurationTest {
     void beanFactories_returnAuthenticationComponents() {
         BCryptPasswordEncoder encoder = configuration.passwordEncoder();
         AuthenticationProvider provider = configuration.authenticationProvider();
+        HttpClient httpClient = configuration.httpClient();
 
         assertThat(encoder).isNotNull();
         assertThat(provider).isNotNull();
+        assertThat(httpClient).isNotNull();
     }
 
     @Test
