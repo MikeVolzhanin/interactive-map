@@ -28,6 +28,7 @@ class GlobalExceptionHandlerTest {
         assertResponse(handler.handleInvalidVerificationCode(new InvalidVerificationCodeException("invalid")), 400, "invalid");
         assertResponse(handler.handleRefreshTokenNotFound(new RefreshTokenNotFoundException("missing")), 400, "missing");
         assertResponse(handler.handleEmailSend(new EmailSendException("email")), 500, "email");
+        assertResponse(handler.handleExternalService(new ExternalServiceException("upstream")), 502, "upstream");
     }
 
     @Test

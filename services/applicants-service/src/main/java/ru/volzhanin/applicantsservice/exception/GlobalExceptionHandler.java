@@ -99,6 +99,13 @@ public class GlobalExceptionHandler {
         return ErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
     }
 
+    @ExceptionHandler(ExternalServiceException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public ErrorResponse handleExternalService(ExternalServiceException ex) {
+        log.error("РћС€РёР±РєР° РІРЅРµС€РЅРµРіРѕ СЃРµСЂРІРёСЃР°: {}", ex.getMessage(), ex);
+        return ErrorResponse.of(HttpStatus.BAD_GATEWAY.value(), ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleGeneric(Exception ex) {
