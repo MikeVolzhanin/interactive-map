@@ -1,0 +1,14 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="2026-05-20 16:00:00" author="Mikhail Volzhanin">
+        <sqlFile path="v1.0.5/create/create-contest-extra-field.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.5/rollback/rollback-create-contest-extra-field.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

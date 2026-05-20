@@ -1,0 +1,123 @@
+.wrap {
+  position: relative;
+  width: 100%;
+  min-height: 360px;
+}
+
+.mapArea {
+  width: 100%;
+}
+
+.composableMap {
+  width: 100%;
+  max-height: min(70vh, 560px);
+}
+
+.composableMap :global(svg) {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Панель масштаба поверх карты справа — не обрезается scroll-контейнером */
+.zoomControl {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #c8d6f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(15, 45, 105, 0.12);
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+
+.zoomBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #0f2d69;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  background: #ffffff;
+  border: 1px solid #d0dced;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.zoomBtn:hover:not(:disabled) {
+  background: #eef3fb;
+  border-color: #0f2d69;
+}
+
+.zoomBtn:disabled {
+  color: #b0b8c8;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.zoomTrack {
+  position: relative;
+  width: 36px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.zoomSlider {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center center;
+  cursor: pointer;
+  accent-color: #234b9b;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.zoomSlider::-webkit-slider-runnable-track {
+  height: 10px;
+  background: linear-gradient(to right, #d0dced, #234b9b);
+  border-radius: 5px;
+}
+
+.zoomSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -5px;
+  background: #0f2d69;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(15, 45, 105, 0.3);
+}
+
+.zoomSlider::-moz-range-track {
+  height: 10px;
+  background: linear-gradient(to right, #d0dced, #234b9b);
+  border-radius: 5px;
+}
+
+.zoomSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #0f2d69;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(15, 45, 105, 0.3);
+}

@@ -43,6 +43,12 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/map/regions >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
 
   frontend:
     build:
@@ -51,7 +57,7 @@ services:
     container_name: interactive-map-frontend
     depends_on:
       applicants-service:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "3000:80"
     restart: unless-stopped

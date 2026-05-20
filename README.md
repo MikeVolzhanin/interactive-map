@@ -56,6 +56,23 @@ cd deploy
 docker-compose up --build
 ```
 
+При первом запуске и при каждом `up` контейнер **migrator** автоматически применяет все новые Liquibase-миграции из `db/` (сервис `applicants-service` стартует только после успешного `update`).
+
+После обновления ветки из `master` на уже существующем томе PostgreSQL достаточно пересобрать сервисы — миграции подтянутся сами:
+
+```bash
+cd deploy
+docker-compose up --build -d
+```
+
+Если БД уже запущена, а нужно только применить схему без полного перезапуска:
+
+```bash
+cd deploy
+docker-compose run --rm migrator
+docker-compose up --build -d applicants-service frontend
+```
+
 После запуска:
 - Фронтенд: http://localhost:3000
 - Backend API: http://localhost:8080
@@ -68,12 +85,9 @@ interactive-map/
 ├── frontend/               # React SPA
 ├── services/
 │   └── applicants-service/ # Spring Boot сервис
-├── db/                     # Liquibase миграции
+├── db/                     # Liquibase миграции (см. db/db.changelog-master.xml)
 │   ├── db.changelog-master.xml
-│   └── changelog/
-│       ├── v1.0.0.xml      # Начальная схема
-│       ├── v1.0.1.xml      # Тестовые данные
-│       └── v1.0.2.xml      # Добавление роли пользователя
+│   └── changelog/          # v1.0.0 … v1.0.7 (схема, конкурсы, доп. поля выгрузки)
 └── deploy/
     ├── docker-compose.yml
     └── .env.example
@@ -101,6 +115,13 @@ docker-compose down
 ```bash
 cd deploy
 docker-compose down -v
+```
+
+### Применить миграции БД вручную
+
+```bash
+cd deploy
+docker-compose run --rm migrator
 ```
 
 ### Посмотреть логи сервиса

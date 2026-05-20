@@ -1,7 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchInterestStats, fetchNews, fetchRegionStats } from '../../api/map.js'
+import { fetchContests, fetchInterestStats, fetchNews, fetchRegionCatalog, fetchRegionStats } from '../../api/map.js'
+import RussiaGeoMap from '../../components/RussiaGeoMap/RussiaGeoMap.jsx'
+import {
+  canShowGeoMapSwitcher,
+  extractGeoFeatureNames,
+  filterSchematicRegions,
+} from '../../utils/regionGeoMatch.js'
 import styles from './MapPage.module.css'
+
+const MAP_MODE = {
+  SCHEMATIC: 'schematic',
+  GEO: 'geo',
+}
+
+/** Порядок вывода конкурсов с API (см. GET /api/map/contests?sort=) */
+const CONTEST_SORT = {
+  NONE: 'none',
+  DEADLINE: 'deadline',
+}
 
 const REGIONS = [
   { id: 46, code: 'КЛГ', name: 'Калининградская область', x: 1, y: 3 },
@@ -95,13 +112,6 @@ const REGIONS = [
   { id: 79, code: 'ХРС', name: 'Херсонская область', x: 2, y: 8 },
 ]
 
-const CONTESTS = [
-  { id: 1, title: 'Олимпиада школьников', status: 'Прием заявок', deadline: 'до 20 мая' },
-  { id: 2, title: 'Конкурс проектных работ', status: 'Идет отбор', deadline: 'до 28 мая' },
-  { id: 3, title: 'Региональный трек', status: 'Скоро старт', deadline: 'с 1 июня' },
-  { id: 4, title: 'Портфолио абитуриента', status: 'Открыт', deadline: 'до 15 июня' },
-]
-
 function getIntensity(count, maxCount) {
   if (count === 0) return 0
   if (count < maxCount * 0.18) return 1
@@ -124,6 +134,9 @@ function formatNewsDate(date) {
 export default function MapPage() {
   const navigate = useNavigate()
   const [selectedId, setSelectedId] = useState(82)
+  const [mapMode, setMapMode] = useState(MAP_MODE.SCHEMATIC)
+  const [regionCatalog, setRegionCatalog] = useState(null)
+  const [geoFeatureNames, setGeoFeatureNames] = useState(null)
   const [regionStats, setRegionStats] = useState([])
   const [isStatsLoading, setIsStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState('')
@@ -136,6 +149,65 @@ export default function MapPage() {
   const [interestsError, setInterestsError] = useState('')
   const [regionInterests, setRegionInterests] = useState({})
   const [hoveredRegion, setHoveredRegion] = useState(null)
+  const [contests, setContests] = useState([])
+  const [isContestsLoading, setIsContestsLoading] = useState(true)
+  const [contestsError, setContestsError] = useState('')
+  const [contestSort, setContestSort] = useState(CONTEST_SORT.NONE)
+
+  useEffect(() => {
+    let ignore = false
+
+    fetchRegionCatalog()
+      .then(data => {
+        if (!ignore) setRegionCatalog(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        if (!ignore) {
+          setRegionCatalog(REGIONS.map(region => ({ id: region.id, name: region.name })))
+        }
+      })
+
+    fetch('/geo/russia.geojson')
+      .then(response => response.json())
+      .then(geoJson => {
+        if (!ignore) setGeoFeatureNames(extractGeoFeatureNames(geoJson))
+      })
+      .catch(() => {
+        if (!ignore) setGeoFeatureNames([])
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    setIsContestsLoading(true)
+    setContestsError('')
+
+    fetchContests({ sort: contestSort })
+      .then(data => {
+        if (!ignore) {
+          setContests(Array.isArray(data) ? data : [])
+          setContestsError('')
+        }
+      })
+      .catch(error => {
+        if (!ignore) {
+          setContests([])
+          setContestsError(error.message || 'Не удалось загрузить конкурсы')
+        }
+      })
+      .finally(() => {
+        if (!ignore) setIsContestsLoading(false)
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [contestSort])
 
   useEffect(() => {
     let ignore = false
@@ -212,26 +284,82 @@ export default function MapPage() {
     }
   }, [])
 
-  const regions = useMemo(() => {
-    const countsByRegion = new Map(
+  const schematicRegionDefs = useMemo(() => {
+    if (regionCatalog === null) return REGIONS
+    return filterSchematicRegions(REGIONS, regionCatalog)
+  }, [regionCatalog])
+
+  const catalogIds = useMemo(() => {
+    if (!regionCatalog?.length) return new Set(schematicRegionDefs.map(region => region.id))
+    return new Set(regionCatalog.map(region => Number(region.id)))
+  }, [regionCatalog, schematicRegionDefs])
+
+  const canShowGeoMap = useMemo(() => {
+    if (regionCatalog === null || !geoFeatureNames?.length) return false
+    if (!regionCatalog.length) return false
+    return canShowGeoMapSwitcher(regionCatalog, geoFeatureNames)
+  }, [regionCatalog, geoFeatureNames])
+
+  const countsByRegion = useMemo(
+    () => new Map(
       regionStats.map(item => [
         Number(item.regionId),
         Number(item.applicantsCount) || 0,
       ]),
-    )
-    const withCounts = REGIONS.map(region => ({
+    ),
+    [regionStats],
+  )
+
+  const regions = useMemo(() => {
+    const withCounts = schematicRegionDefs.map(region => ({
       ...region,
       applicants: countsByRegion.get(region.id) ?? 0,
     }))
-    const maxCount = Math.max(...withCounts.map(region => region.applicants))
+    const maxCount = Math.max(...withCounts.map(region => region.applicants), 0)
     return withCounts.map(region => ({
       ...region,
       intensity: getIntensity(region.applicants, maxCount),
     }))
-  }, [regionStats])
+  }, [countsByRegion, schematicRegionDefs])
+
+  const geoRegions = useMemo(() => {
+    const catalog = regionCatalog?.length ? regionCatalog : schematicRegionDefs.map(region => ({
+      id: region.id,
+      name: region.name,
+    }))
+    const codeById = new Map(REGIONS.map(region => [region.id, region.code]))
+    const withCounts = catalog.map(catalogRegion => ({
+      id: Number(catalogRegion.id),
+      name: catalogRegion.name,
+      code: codeById.get(Number(catalogRegion.id)) ?? String(catalogRegion.id),
+      applicants: countsByRegion.get(Number(catalogRegion.id)) ?? 0,
+    }))
+    const maxCount = Math.max(...withCounts.map(region => region.applicants), 0)
+    return withCounts.map(region => ({
+      ...region,
+      intensity: getIntensity(region.applicants, maxCount),
+    }))
+  }, [countsByRegion, regionCatalog, schematicRegionDefs])
+
+  useEffect(() => {
+    if (!regions.length) return
+    if (!regions.some(region => region.id === selectedId)) {
+      setSelectedId(regions[0].id)
+    }
+  }, [regions, selectedId])
+
+  useEffect(() => {
+    if (!canShowGeoMap && mapMode === MAP_MODE.GEO) {
+      setMapMode(MAP_MODE.SCHEMATIC)
+    }
+  }, [canShowGeoMap, mapMode])
 
   const totalApplicants = regions.reduce((sum, region) => sum + region.applicants, 0)
-  const selectedRegion = regions.find(region => region.id === selectedId) ?? regions[0]
+  const selectedRegion = useMemo(() => (
+    geoRegions.find(region => region.id === selectedId)
+    ?? regions.find(region => region.id === selectedId)
+    ?? regions[0]
+  ), [geoRegions, regions, selectedId])
   const topRegions = [...regions].sort((a, b) => b.applicants - a.applicants).slice(0, 5)
   const normalizedNewsSearch = newsSearch.trim().toLowerCase()
   const filteredNews = normalizedNewsSearch
@@ -321,31 +449,63 @@ export default function MapPage() {
                 <span className={styles.statLabel}>регионов</span>
               </div>
             </div>
+            {canShowGeoMap && (
+              <div className={styles.mapModeSwitch} role="group" aria-label="Тип карты">
+                <button
+                  type="button"
+                  className={`${styles.mapModeBtn} ${mapMode === MAP_MODE.SCHEMATIC ? styles.mapModeBtnActive : ''}`}
+                  onClick={() => setMapMode(MAP_MODE.SCHEMATIC)}
+                >
+                  Схема
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.mapModeBtn} ${mapMode === MAP_MODE.GEO ? styles.mapModeBtnActive : ''}`}
+                  onClick={() => setMapMode(MAP_MODE.GEO)}
+                >
+                  Географическая
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className={styles.mapPanel}>
+          <div
+            className={`${styles.mapPanel} ${mapMode === MAP_MODE.GEO ? styles.mapPanelGeo : ''}`}
+          >
             {(isStatsLoading || statsError) && (
               <div className={`${styles.mapStatus} ${statsError ? styles.mapStatusError : ''}`}>
                 {statsError || 'Загружаем статистику по регионам...'}
               </div>
             )}
-            <div className={styles.gridMap} aria-label="Карта регионов Российской Федерации">
-              {regions.map(region => (
-                <button
-                  key={region.id}
-                  className={`${styles.regionCell} ${styles[`intensity${region.intensity}`]} ${selectedId === region.id ? styles.regionSelected : ''}`}
-                  style={{ gridColumn: region.x, gridRow: region.y }}
-                  onClick={() => setSelectedId(region.id)}
-                  onMouseEnter={event => handleRegionHover(region, event)}
-                  onMouseLeave={clearHoveredRegion}
-                  onFocus={event => handleRegionHover(region, event)}
-                  onBlur={clearHoveredRegion}
-                  aria-label={`${region.name}: ${region.applicants} абитуриентов`}
-                >
-                  {region.code}
-                </button>
-              ))}
-            </div>
+            {mapMode === MAP_MODE.SCHEMATIC ? (
+              <div className={styles.gridMap} aria-label="Схематическая карта регионов Российской Федерации">
+                {regions.map(region => (
+                  <button
+                    key={region.id}
+                    type="button"
+                    className={`${styles.regionCell} ${styles[`intensity${region.intensity}`]} ${selectedId === region.id ? styles.regionSelected : ''}`}
+                    style={{ gridColumn: region.x, gridRow: region.y }}
+                    onClick={() => setSelectedId(region.id)}
+                    onMouseEnter={event => handleRegionHover(region, event)}
+                    onMouseLeave={clearHoveredRegion}
+                    onFocus={event => handleRegionHover(region, event)}
+                    onBlur={clearHoveredRegion}
+                    aria-label={`${region.name}: ${region.applicants} абитуриентов`}
+                  >
+                    {region.code}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <RussiaGeoMap
+                regions={geoRegions}
+                catalogIds={catalogIds}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onRegionHover={handleRegionHover}
+                onRegionLeave={clearHoveredRegion}
+              />
+            )}
           </div>
 
           <div className={styles.mapFooter}>
@@ -460,10 +620,49 @@ export default function MapPage() {
           <section className={styles.sidePanel}>
             <div className={styles.sideHeader}>
               <h2 className={styles.sideTitle}>Конкурсы</h2>
-              <span className={styles.sideBadge}>{CONTESTS.length}</span>
+              <span className={styles.sideBadge}>{contests.length}</span>
             </div>
+            <div className={styles.contestToolbar}>
+              <span className={styles.contestSortLabel} id="contest-sort-label">Порядок</span>
+              <div
+                className={styles.mapModeSwitch}
+                role="group"
+                aria-labelledby="contest-sort-label"
+              >
+                <button
+                  type="button"
+                  className={`${styles.mapModeBtn} ${contestSort === CONTEST_SORT.NONE ? styles.mapModeBtnActive : ''}`}
+                  onClick={() => setContestSort(CONTEST_SORT.NONE)}
+                  disabled={isContestsLoading}
+                >
+                  Как в базе
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.mapModeBtn} ${contestSort === CONTEST_SORT.DEADLINE ? styles.mapModeBtnActive : ''}`}
+                  onClick={() => setContestSort(CONTEST_SORT.DEADLINE)}
+                  disabled={isContestsLoading}
+                >
+                  По дате окончания
+                </button>
+              </div>
+            </div>
+            {contestSort === CONTEST_SORT.DEADLINE && (
+              <p className={styles.contestSortHint}>
+                Сортировка по календарной дате из файла импорта. Если в ячейке только текст («до 20 мая»), такая строка
+                оказывается в конце списка.
+              </p>
+            )}
+            {(isContestsLoading || contestsError) && (
+              <div className={`${styles.newsStatus} ${contestsError ? styles.newsStatusError : ''}`}>
+                {contestsError || 'Загружаем конкурсы...'}
+              </div>
+            )}
+            {!isContestsLoading && !contestsError && contests.length === 0 && (
+              <div className={styles.newsStatus}>Конкурсы пока не добавлены</div>
+            )}
             <ul className={styles.contestList}>
-              {CONTESTS.map(item => (
+              {contests.map(item => (
                 <li key={item.id} className={styles.contestItem}>
                   <span className={styles.contestTitle}>{item.title}</span>
                   <span className={styles.contestMeta}>{item.status}</span>

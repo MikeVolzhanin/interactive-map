@@ -486,6 +486,53 @@
   cursor: not-allowed;
 }
 
+/* ===== Export sections row ===== */
+.exportRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.exportActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.exportBtnSecondary {
+  color: #234B9B;
+  background: #ffffff;
+  border: 1.5px solid #234B9B;
+}
+
+.exportBtnSecondary:hover:not(:disabled) {
+  background: #EBF0FA;
+}
+
+.exportBtnDanger {
+  color: #ffffff;
+  background: #dc2626;
+  border: 1.5px solid #dc2626;
+  font-weight: 700;
+}
+
+.exportBtnDanger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.contestNote {
+  font-size: 14px;
+  color: #929292;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
 /* ===== Export section ===== */
 .exportHint {
   font-size: 14px;
@@ -508,6 +555,18 @@
   color: #0F2D69;
   cursor: pointer;
   user-select: none;
+}
+
+.checkLabelDisabled {
+  color: #B0B8C8;
+  cursor: not-allowed;
+}
+
+.contestFieldHint {
+  font-size: 13px;
+  color: #6B7A99;
+  margin: -10px 0 16px;
+  line-height: 1.4;
 }
 
 .checkbox {
@@ -599,6 +658,10 @@
     grid-column: 1;
   }
 
+  .exportRow {
+    grid-template-columns: 1fr;
+  }
+
   .main {
     padding: 24px 16px 32px;
     gap: 20px;
@@ -649,6 +712,14 @@
   }
 
   .exportBtn {
+    width: 100%;
+  }
+
+  .exportActions {
+    flex-direction: column;
+  }
+
+  .exportActions .exportBtn {
     width: 100%;
   }
 }

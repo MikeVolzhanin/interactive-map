@@ -1,0 +1,2 @@
+ALTER TABLE contest
+    ADD COLUMN IF NOT EXISTS deadline_on DATE;
