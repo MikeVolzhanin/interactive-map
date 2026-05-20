@@ -1,5 +1,22 @@
 import { authorizedRequest, authorizedFetch } from './http.js'
 
+async function throwApiError(res, fallback) {
+  let message = fallback ?? `Ошибка ${res.status}`
+  try {
+    const contentType = res.headers.get('content-type') ?? ''
+    if (contentType.includes('application/json')) {
+      const body = await res.json()
+      message = body.message ?? body.error ?? message
+    } else {
+      const text = await res.text()
+      if (text) message = text
+    }
+  } catch (_) {
+    // оставляем fallback
+  }
+  throw new Error(message)
+}
+
 // ── Education Levels ──────────────────────────────────────────────────────────
 const EDU_BASE = '/api/education-levels'
 
@@ -72,7 +89,7 @@ export const adminExportUsers = async (fields) => {
     body: JSON.stringify({ fields }),
   })
 
-  if (!res.ok) throw new Error(`Ошибка ${res.status}`)
+  if (!res.ok) await throwApiError(res)
 
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
@@ -83,4 +100,44 @@ export const adminExportUsers = async (fields) => {
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
+}
+
+// ── Contests ──────────────────────────────────────────────────────────────────
+export const adminFetchContestExportFields = () =>
+  authorizedRequest('/api/admin/contests/export-fields')
+
+// POST /api/admin/contests/export  body: { fields: string[] }
+// POST /api/admin/contests/import  → multipart file
+export const adminExportContests = async (fields) => {
+  let res
+  try {
+    res = await authorizedFetch('/api/admin/contests/export', {
+      method: 'POST',
+      body: JSON.stringify({ fields: fields ?? [] }),
+    })
+  } catch {
+    throw new Error('Не удалось выгрузить файл. Проверьте, что сервер запущен и вы вошли как администратор.')
+  }
+
+  if (!res.ok) await throwApiError(res)
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'contests.xlsx'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+export const adminImportContests = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return authorizedRequest('/api/admin/contests/import', {
+    method: 'POST',
+    body: formData,
+  })
 }

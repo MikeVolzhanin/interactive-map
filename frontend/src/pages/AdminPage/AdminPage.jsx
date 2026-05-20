@@ -9,9 +9,18 @@ import {
   adminFetchRegions, adminCreateRegion,
   adminUpdateRegion, adminDeleteRegion,
   adminExportUsers,
+  adminExportContests,
+  adminImportContests,
+  adminFetchContestExportFields,
 } from '../../api/admin.js'
 import { logout } from '../../api/auth.js'
 import styles from './AdminPage.module.css'
+
+const CONTEST_BASE_EXPORT_FIELDS = [
+  { key: 'email',             label: 'E-mail' },
+  { key: 'конкурсы',          label: 'Конкурсы' },
+  { key: 'registeredOnSite',  label: 'Зарегистрирован на сайте' },
+]
 
 const EXPORT_FIELDS = [
   { key: 'lastName',        label: 'Фамилия' },
@@ -384,6 +393,31 @@ export default function AdminPage() {
   const [exportError,   setExportError]   = useState('')
   const [exportSuccess, setExportSuccess] = useState(false)
 
+  const [contestBaseFields,    setContestBaseFields]    = useState(
+    () => new Set(CONTEST_BASE_EXPORT_FIELDS.map((f) => f.key))
+  )
+  const [contestExportFields,  setContestExportFields]  = useState(() => new Set())
+  const [contestFieldOptions,  setContestFieldOptions]  = useState([])
+  const [loadingContestFields, setLoadingContestFields] = useState(true)
+  const [contestExporting,     setContestExporting]     = useState(false)
+  const [contestImporting,     setContestImporting]     = useState(false)
+  const [contestError,         setContestError]         = useState('')
+  const [contestSuccess,       setContestSuccess]       = useState('')
+  const contestFileRef = useRef(null)
+
+  async function loadContestExportFields() {
+    setLoadingContestFields(true)
+    try {
+      const fields = await adminFetchContestExportFields()
+      setContestFieldOptions(fields)
+      setContestExportFields(new Set(fields.map((f) => f.key)))
+    } catch (e) {
+      setContestError(e.message)
+    } finally {
+      setLoadingContestFields(false)
+    }
+  }
+
   useEffect(() => {
     adminFetchEducationLevels()
       .then(setEduLevels)
@@ -399,6 +433,8 @@ export default function AdminPage() {
       .then(setRegions)
       .catch(e => setRegError(e.message))
       .finally(() => setLoadingReg(false))
+
+    loadContestExportFields()
   }, [])
 
   async function createEdu(data)       { const item = await adminCreateEducationLevel(data);    setEduLevels(p => [...p, item]) }
@@ -432,6 +468,79 @@ export default function AdminPage() {
       setExportError(e.message)
     } finally {
       setExporting(false)
+    }
+  }
+
+  function toggleContestBaseField(key) {
+    setContestBaseFields((prev) => {
+      const next = new Set(prev)
+      if (key === 'email') {
+        if (next.has('email')) {
+          next.delete('email')
+          next.delete('registeredOnSite')
+        } else {
+          next.add('email')
+        }
+        return next
+      }
+      if (key === 'registeredOnSite') {
+        if (!prev.has('email')) return prev
+        next.has(key) ? next.delete(key) : next.add(key)
+        return next
+      }
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+
+  function toggleContestField(key) {
+    setContestExportFields((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+
+  const contestSelectedCount = contestBaseFields.size + contestExportFields.size
+  const contestEmailSelected = contestBaseFields.has('email')
+
+  async function handleContestExport() {
+    if (contestSelectedCount === 0) {
+      setContestError('Выберите хотя бы одно поле')
+      return
+    }
+    setContestExporting(true); setContestError(''); setContestSuccess('')
+    try {
+      await adminExportContests([...contestBaseFields, ...contestExportFields])
+      setContestSuccess('Файл сформирован и загружен')
+      setTimeout(() => setContestSuccess(''), 4000)
+    } catch (e) {
+      setContestError(e.message)
+    } finally {
+      setContestExporting(false)
+    }
+  }
+
+  function handleContestImportClick() {
+    setContestError('')
+    contestFileRef.current?.click()
+  }
+
+  async function handleContestFileChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setContestImporting(true); setContestError(''); setContestSuccess('')
+    try {
+      const result = await adminImportContests(file)
+      setContestSuccess(result?.message ?? 'Файл загружен')
+      await loadContestExportFields()
+      setTimeout(() => setContestSuccess(''), 6000)
+    } catch (err) {
+      setContestError(err.message)
+    } finally {
+      setContestImporting(false)
     }
   }
 
@@ -485,6 +594,7 @@ export default function AdminPage() {
           </div>
         </div>
 
+        <div className={styles.exportRow}>
         <div className={styles.card}>
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Выгрузка пользователей</h2>
@@ -517,6 +627,107 @@ export default function AdminPage() {
               {exporting ? 'Формирование…' : 'Выгрузить XLSX'}
             </button>
           </section>
+        </div>
+
+        <div className={styles.card}>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Конкурсы</h2>
+            <p className={styles.contestNote}>
+              В загружаемом файле должны быть столбцы <strong>email</strong> и <strong>конкурсы</strong>.
+              Остальные столбцы (описание, статус и т.д.) сохраняются в БД и появляются в списке полей для выгрузки после импорта.
+              Учётные записи на сайте при импорте не создаются — данные попадают только в таблицу конкурсов.
+              Пример: <a href="/samples/contests-import-sample.xlsx" download>contests-import-sample.xlsx</a>
+            </p>
+
+            <p className={styles.exportHint}>Выберите поля для включения в XLSX-файл:</p>
+
+            <div className={styles.exportGrid}>
+              {CONTEST_BASE_EXPORT_FIELDS.map((f) => {
+                const needsEmail = f.key === 'registeredOnSite'
+                const disabled = contestExporting || contestImporting
+                  || (needsEmail && !contestEmailSelected)
+                return (
+                  <label
+                    key={f.key}
+                    className={`${styles.checkLabel} ${disabled && needsEmail ? styles.checkLabelDisabled : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={contestBaseFields.has(f.key)}
+                      onChange={() => toggleContestBaseField(f.key)}
+                      disabled={disabled}
+                    />
+                    {f.label}
+                  </label>
+                )
+              })}
+              {!loadingContestFields && contestFieldOptions.map((f) => (
+                <label key={f.key} className={styles.checkLabel}>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={contestExportFields.has(f.key)}
+                    onChange={() => toggleContestField(f.key)}
+                    disabled={contestExporting || contestImporting}
+                  />
+                  {f.label}
+                </label>
+              ))}
+            </div>
+
+            {loadingContestFields && (
+              <div className={styles.skeleton}>
+                {[1, 2].map((i) => <div key={i} className={styles.skeletonLine} />)}
+              </div>
+            )}
+
+            {!contestEmailSelected && (
+              <p className={styles.contestFieldHint} role="note">
+                «Зарегистрирован на сайте» доступен только при выборе E-mail.
+              </p>
+            )}
+
+            {!loadingContestFields && contestFieldOptions.length === 0 && (
+              <p className={styles.exportHint}>
+                Дополнительных полей пока нет — загрузите Excel с extra-столбцами.
+              </p>
+            )}
+
+            {contestError && <p className={styles.errorMsg} role="alert">{contestError}</p>}
+            {contestSuccess && <p className={styles.successMsg} role="status">{contestSuccess}</p>}
+
+            <div className={styles.exportActions}>
+              <button
+                type="button"
+                className={styles.exportBtn}
+                onClick={handleContestExport}
+                disabled={contestExporting || contestImporting || contestSelectedCount === 0}
+                aria-busy={contestExporting}
+              >
+                {contestExporting ? 'Формирование…' : 'Выгрузить XLSX'}
+              </button>
+              <button
+                type="button"
+                className={`${styles.exportBtn} ${styles.exportBtnSecondary}`}
+                onClick={handleContestImportClick}
+                disabled={contestExporting || contestImporting}
+                aria-busy={contestImporting}
+              >
+                {contestImporting ? 'Загрузка…' : 'Загрузить XLSX'}
+              </button>
+              <input
+                ref={contestFileRef}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                className={styles.hiddenFileInput}
+                onChange={handleContestFileChange}
+                tabIndex={-1}
+                aria-hidden
+              />
+            </div>
+          </section>
+        </div>
         </div>
       </main>
 
