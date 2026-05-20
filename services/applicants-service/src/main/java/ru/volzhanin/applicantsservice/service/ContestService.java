@@ -38,6 +38,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,13 +56,26 @@ public class ContestService {
     private final ContestRepository contestRepository;
     private final ContestExtraFieldRepository contestExtraFieldRepository;
 
-    public List<ContestPublicDto> listPublicContests() {
-        return contestRepository.findAllByOrderByIdAsc().stream()
+    public List<ContestPublicDto> listPublicContests(String sort) {
+        String mode = sort == null ? "none" : sort.trim().toLowerCase(Locale.ROOT);
+        if (!"deadline".equals(mode)) {
+            mode = "none";
+        }
+
+        List<Contest> contests = new ArrayList<>(contestRepository.findAllByOrderByIdAsc());
+        if ("deadline".equals(mode)) {
+            contests.sort(Comparator
+                    .comparing(Contest::getDeadlineOn, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(Contest::getId));
+        }
+
+        return contests.stream()
                 .map(c -> ContestPublicDto.builder()
                         .id(c.getId())
                         .title(c.getTitle())
                         .status(c.getStatus())
                         .deadline(c.getDeadline())
+                        .deadlineOn(c.getDeadlineOn())
                         .build())
                 .toList();
     }
@@ -131,6 +145,9 @@ public class ContestService {
                 contest.setTitle(trimmedTitle);
                 contest.setStatus(status.trim());
                 contest.setDeadline(deadline.trim());
+                contest.setDeadlineOn(ContestExcelSupport.tryResolveDeadlineOn(
+                        row, mapping.deadlineColumnIndex(), formatter, evaluator
+                ).orElse(null));
                 if (contest.getExtraData() == null) {
                     contest.setExtraData(new LinkedHashMap<>());
                 }

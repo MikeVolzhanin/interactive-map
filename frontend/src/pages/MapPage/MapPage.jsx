@@ -14,6 +14,12 @@ const MAP_MODE = {
   GEO: 'geo',
 }
 
+/** Порядок вывода конкурсов с API (см. GET /api/map/contests?sort=) */
+const CONTEST_SORT = {
+  NONE: 'none',
+  DEADLINE: 'deadline',
+}
+
 const REGIONS = [
   { id: 46, code: 'КЛГ', name: 'Калининградская область', x: 1, y: 3 },
   { id: 83, code: 'СПБ', name: 'Санкт-Петербург', x: 4, y: 3 },
@@ -146,6 +152,7 @@ export default function MapPage() {
   const [contests, setContests] = useState([])
   const [isContestsLoading, setIsContestsLoading] = useState(true)
   const [contestsError, setContestsError] = useState('')
+  const [contestSort, setContestSort] = useState(CONTEST_SORT.NONE)
 
   useEffect(() => {
     let ignore = false
@@ -177,7 +184,10 @@ export default function MapPage() {
   useEffect(() => {
     let ignore = false
 
-    fetchContests()
+    setIsContestsLoading(true)
+    setContestsError('')
+
+    fetchContests({ sort: contestSort })
       .then(data => {
         if (!ignore) {
           setContests(Array.isArray(data) ? data : [])
@@ -197,7 +207,7 @@ export default function MapPage() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [contestSort])
 
   useEffect(() => {
     let ignore = false
@@ -612,6 +622,37 @@ export default function MapPage() {
               <h2 className={styles.sideTitle}>Конкурсы</h2>
               <span className={styles.sideBadge}>{contests.length}</span>
             </div>
+            <div className={styles.contestToolbar}>
+              <span className={styles.contestSortLabel} id="contest-sort-label">Порядок</span>
+              <div
+                className={styles.mapModeSwitch}
+                role="group"
+                aria-labelledby="contest-sort-label"
+              >
+                <button
+                  type="button"
+                  className={`${styles.mapModeBtn} ${contestSort === CONTEST_SORT.NONE ? styles.mapModeBtnActive : ''}`}
+                  onClick={() => setContestSort(CONTEST_SORT.NONE)}
+                  disabled={isContestsLoading}
+                >
+                  Как в базе
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.mapModeBtn} ${contestSort === CONTEST_SORT.DEADLINE ? styles.mapModeBtnActive : ''}`}
+                  onClick={() => setContestSort(CONTEST_SORT.DEADLINE)}
+                  disabled={isContestsLoading}
+                >
+                  По дате окончания
+                </button>
+              </div>
+            </div>
+            {contestSort === CONTEST_SORT.DEADLINE && (
+              <p className={styles.contestSortHint}>
+                Сортировка по календарной дате из файла импорта. Если в ячейке только текст («до 20 мая»), такая строка
+                оказывается в конце списка.
+              </p>
+            )}
             {(isContestsLoading || contestsError) && (
               <div className={`${styles.newsStatus} ${contestsError ? styles.newsStatusError : ''}`}>
                 {contestsError || 'Загружаем конкурсы...'}

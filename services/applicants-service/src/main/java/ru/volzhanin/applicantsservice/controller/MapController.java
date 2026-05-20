@@ -59,12 +59,15 @@ public class MapController {
         return mapService.getInterestApplicantsStats(regionId);
     }
 
-    @Operation(summary = "Список конкурсов для карты")
+    @Operation(summary = "Список конкурсов для карты",
+            description = "Параметр sort: none — порядок как в базе (по id), deadline — по полю deadline_on, затем id")
     @ApiResponse(responseCode = "200", description = "Конкурсы",
             content = @Content(mediaType = "application/json",
                     array = @ArraySchema(schema = @Schema(implementation = ContestPublicDto.class))))
     @GetMapping("/contests")
-    public List<ContestPublicDto> getContests() {
-        return contestService.listPublicContests();
+    public List<ContestPublicDto> getContests(
+            @RequestParam(name = "sort", defaultValue = "none") String sort
+    ) {
+        return contestService.listPublicContests(sort);
     }
 }

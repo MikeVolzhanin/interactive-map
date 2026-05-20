@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -39,6 +40,10 @@ public class Contest {
 
     @Column(nullable = false, length = 512)
     private String deadline;
+
+    /** Дата для сортировки на карте (если удалось вывести из Excel или текста). */
+    @Column(name = "deadline_on")
+    private LocalDate deadlineOn;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)

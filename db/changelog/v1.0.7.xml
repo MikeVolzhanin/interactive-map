@@ -1,0 +1,14 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="2026-05-21 14:00:00 contest deadline_on" author="interactive-map">
+        <sqlFile path="v1.0.7/add/add-contest-deadline-on.sql" relativeToChangelogFile="true"/>
+        <rollback>
+            <sqlFile path="v1.0.7/rollback/rollback-add-contest-deadline-on.sql" relativeToChangelogFile="true"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

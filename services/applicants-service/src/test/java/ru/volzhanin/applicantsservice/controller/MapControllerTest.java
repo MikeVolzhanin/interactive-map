@@ -68,18 +68,34 @@ class MapControllerTest {
     }
 
     @Test
-    void getContests_delegatesToContestService() {
+    void getContests_delegatesToContestServiceWithSortNone() {
         ContestPublicDto dto = ContestPublicDto.builder()
                 .id(1L)
                 .title("Олимпиада")
                 .status("Прием заявок")
                 .deadline("до 20 мая")
                 .build();
-        when(contestService.listPublicContests()).thenReturn(List.of(dto));
+        when(contestService.listPublicContests("none")).thenReturn(List.of(dto));
 
-        List<ContestPublicDto> result = controller.getContests();
+        List<ContestPublicDto> result = controller.getContests("none");
 
         assertThat(result).containsExactly(dto);
-        verify(contestService).listPublicContests();
+        verify(contestService).listPublicContests("none");
+    }
+
+    @Test
+    void getContests_delegatesToContestServiceWithSortDeadline() {
+        ContestPublicDto dto = ContestPublicDto.builder()
+                .id(2L)
+                .title("Конкурс")
+                .status("Открыт")
+                .deadline("2026-05-28")
+                .build();
+        when(contestService.listPublicContests("deadline")).thenReturn(List.of(dto));
+
+        List<ContestPublicDto> result = controller.getContests("deadline");
+
+        assertThat(result).containsExactly(dto);
+        verify(contestService).listPublicContests("deadline");
     }
 }

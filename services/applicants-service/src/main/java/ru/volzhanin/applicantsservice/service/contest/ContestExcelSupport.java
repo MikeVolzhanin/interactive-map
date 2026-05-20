@@ -1,15 +1,22 @@
 package ru.volzhanin.applicantsservice.service.contest;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public final class ContestExcelSupport {
@@ -133,5 +140,56 @@ public final class ContestExcelSupport {
             throw new IllegalArgumentException("Файл Excel не содержит листов");
         }
         return workbook.getSheetAt(0);
+    }
+
+    /**
+     * Пытается извлечь календарную дату из ячейки «дата окончания» для сортировки на карте.
+     * Текст вида «до 20 мая» не парсится — в этом случае вернётся пустое значение.
+     */
+    public static Optional<LocalDate> tryResolveDeadlineOn(
+            Row row,
+            int columnIndex,
+            DataFormatter formatter,
+            FormulaEvaluator evaluator
+    ) {
+        if (row == null) {
+            return Optional.empty();
+        }
+        Cell cell = row.getCell(columnIndex);
+        if (cell == null) {
+            return Optional.empty();
+        }
+
+        CellType type = cell.getCellType();
+        if (type == CellType.FORMULA) {
+            type = cell.getCachedFormulaResultType();
+        }
+
+        if (type == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+            return Optional.of(cell.getLocalDateTimeCellValue().toLocalDate());
+        }
+
+        String asText = formatter.formatCellValue(cell, evaluator).trim();
+        if (asText.isBlank()) {
+            return Optional.empty();
+        }
+        return parseFlexibleLocalDate(asText);
+    }
+
+    private static Optional<LocalDate> parseFlexibleLocalDate(String text) {
+        List<DateTimeFormatter> formatters = List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("d.M.yyyy"),
+                DateTimeFormatter.ofPattern("dd.MM.yyyy"),
+                DateTimeFormatter.ofPattern("yyyy.M.d")
+        );
+        for (DateTimeFormatter formatter : formatters) {
+            try {
+                return Optional.of(LocalDate.parse(text, formatter));
+            } catch (DateTimeParseException ignored) {
+                // try next
+            }
+        }
+        return Optional.empty();
     }
 }

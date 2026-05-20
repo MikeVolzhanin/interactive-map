@@ -15,8 +15,9 @@ export async function fetchInterestStats(regionId) {
   return publicRequest(`/api/map/interests${query}`)
 }
 
-export async function fetchContests() {
-  return publicRequest('/api/map/contests')
+export async function fetchContests(options = {}) {
+  const sort = options.sort === 'deadline' ? 'deadline' : 'none'
+  return publicRequest(`/api/map/contests?sort=${encodeURIComponent(sort)}`)
 }
 
 async function publicRequest(url) {
