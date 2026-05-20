@@ -1,61 +1,124 @@
-**Add your own guidelines here**
-<!--
+# Обновление развёртывания с ветки `master`
 
-System Guidelines
+Инструкция для администратора, у которого на сервере уже работает версия из `master`, и требуется перевести стенд на ветку с доработками карты и конкурсов (`feat/interactive-map-contests` или её наследник после слияния в `master`).
 
-Use this file to provide the AI with rules and guidelines you want it to follow.
-This template outlines a few examples of things you can add. You can add your own sections and format it to suit your needs
+Документ не заменяет корневой [README.md](../../README.md): там описан первичный запуск и локальная разработка.
 
-TIP: More context isn't always better. It can confuse the LLM. Try and add the most important rules you need
+## Отличия новой версии от `master`
 
-# General guidelines
+| Область | Изменение |
+|---------|-----------|
+| Схема БД | Миграции Liquibase **v1.0.6** (таблица `contest`, удаление `contest_participant`) и **v1.0.7** (поле `deadline_on`). |
+| Backend | API конкурсов, импорт и экспорт XLSX в админке; проверка готовности перед стартом frontend. |
+| Frontend (`frontend/`) | Географическая карта, блок конкурсов на `/map`, доработки админки. |
+| Docker Compose | Сервис `migrator` и healthcheck у `applicants-service`; frontend стартует после готовности API. |
 
-Any general rules you want the AI to follow.
-For example:
+Каталог `custom-frontend/` в Docker не участвует. На сервере пересобирается только образ из `frontend/`.
 
-* Only use absolute positioning when necessary. Opt for responsive and well structured layouts that use flexbox and grid by default
-* Refactor code as you go to keep code clean
-* Keep file sizes small and put helper functions and components in their own files.
+## Сетевой доступ на сервере
 
---------------
+В `deploy/docker-compose.yml` наружу проброшен только контейнер **frontend** (порт хоста **3000** → порт 80 внутри контейнера). Сервис **applicants-service** (порт 8080) доступен только внутри сети Compose; снаружи запросы к API идут через Nginx frontend по пути `/api/...`.
 
-# Design system guidelines
-Rules for how the AI should make generations look like your company's design system
+Фактические URL зависят от настройки сервера (DNS, reverse proxy, TLS). В таблице ниже подставьте свой хост вместо `<ХОСТ>`:
 
-Additionally, if you select a design system to use in the prompt box, you can reference
-your design system's components, tokens, variables and components.
-For example:
+| Назначение | Пример URL |
+|------------|------------|
+| Веб-приложение | `http://<ХОСТ>:3000/` или `https://<ХОСТ>/` при проксировании на порт 3000 |
+| Карта | `https://<ХОСТ>/map` |
+| Админка | `https://<ХОСТ>/admin` |
+| Проверка API конкурсов | `https://<ХОСТ>/api/map/contests` |
 
-* Use a base font-size of 14px
-* Date formats should always be in the format “Jun 10”
-* The bottom toolbar should only ever have a maximum of 4 items
-* Never use the floating action button with the bottom toolbar
-* Chips should always come in sets of 3 or more
-* Don't use a dropdown if there are 2 or fewer options
+## Подготовка
 
-You can also create sub sections and add more specific details
-For example:
+1. Согласовать окно обслуживания: при обновлении frontend и backend кратковременно перезапускаются.
+2. Создать резервную копию тома PostgreSQL (том `postgres_data` в Compose) или дамп базы `interactive-map-db`.
+3. Сохранить текущий файл `deploy/.env` с сервера — при обновлении кода его **не перезаписывать** шаблоном из репозитория.
 
+Требования к окружению те же, что для `master`: Docker, Docker Compose, Git.
 
-## Button
-The Button component is a fundamental interactive element in our design system, designed to trigger actions or navigate
-users through the application. It provides visual feedback and clear affordances to enhance user experience.
+## Порядок обновления
 
-### Usage
-Buttons should be used for important actions that users need to take, such as form submissions, confirming choices,
-or initiating processes. They communicate interactivity and should have clear, action-oriented labels.
+Выполнять в каталоге клонированного репозитория на сервере.
 
-### Variants
-* Primary Button
-  * Purpose : Used for the main action in a section or page
-  * Visual Style : Bold, filled with the primary brand color
-  * Usage : One primary button per section to guide users toward the most important action
-* Secondary Button
-  * Purpose : Used for alternative or supporting actions
-  * Visual Style : Outlined with the primary color, transparent background
-  * Usage : Can appear alongside a primary button for less important actions
-* Tertiary Button
-  * Purpose : Used for the least important actions
-  * Visual Style : Text-only with no border, using primary color
-  * Usage : For actions that should be available but not emphasized
--->
+### 1. Получить код новой версии
+
+```bash
+git fetch origin
+git checkout feat/interactive-map-contests
+# либо ветка, в которую уже влиты эти изменения
+git pull
+```
+
+### 2. Проверить конфигурацию
+
+Убедиться, что в `deploy/.env` заданы параметры подключения к БД, `JWT_SECRET_KEY`, при необходимости — почта (`SUPPORT_EMAIL`, `APP_PASSWORD`). Значения должны соответствовать действующему стенду; менять их нужно только при целенаправленной смене секретов.
+
+### 3. Пересобрать и запустить стек
+
+```bash
+cd deploy
+docker compose up --build -d
+```
+
+При старте контейнер **migrator** применит миграции v1.0.6 и v1.0.7 к существующей базе. Сервис **applicants-service** запустится после успешного завершения migrator и успешной проверки `GET /api/map/regions`. Затем поднимется **frontend**.
+
+Ожидаемая длительность: несколько минут (сборка Java-образа и frontend).
+
+### 4. Убедиться, что контейнеры работают
+
+```bash
+docker compose ps
+docker logs interactive-map-migrator
+docker logs interactive-map-applicants-service --tail 50
+docker logs interactive-map-frontend --tail 20
+```
+
+В журнале migrator не должно быть ошибок выполнения `update`. Статус `applicants-service` — `healthy`.
+
+## Данные после обновления схемы
+
+- Таблица **contest_participant** удаляется миграцией v1.0.6. Связь конкурсов с участниками в старой модели не переносится.
+- Список конкурсов на карте берётся из таблицы **contest**. Если после обновления блок пуст, загрузите данные через админку: **Импорт** файла Excel.
+- Образец формата: `frontend/public/samples/contests-import-sample.xlsx` (столбцы: `название`, `статус`, `дата окончания`).
+- Для сортировки по сроку на карте в файле указывайте дату в ячейке Excel, а не только текст вроде «до 20 мая».
+
+## Проверка после обновления
+
+Выполнять по адресу `<ХОСТ>`, принятому на вашем стенде.
+
+1. Открыть `/map`, переключить режим «Географическая» — карта отображается без ошибок в интерфейсе.
+2. В админке импортировать конкурсы (при необходимости), затем на `/map` проверить блок «Конкурсы».
+3. Запрос `GET /api/map/contests` через тот же хост, что и сайт (например `https://<ХОСТ>/api/map/contests`), должен вернуть JSON-массив.
+4. Ответ **502** на `/api/*` — backend ещё не готов или завершился с ошибкой; смотреть `docker logs interactive-map-applicants-service`.
+
+## Пересборка одного сервиса
+
+После правок только в backend:
+
+```bash
+cd deploy
+docker compose up --build -d applicants-service
+```
+
+После правок только в `frontend/`:
+
+```bash
+cd deploy
+docker compose up --build -d frontend
+```
+
+## Откат
+
+При критической ошибке после резервного копирования БД:
+
+1. Переключить репозиторий на коммит/ветку `master`, из которой работал стенд.
+2. Восстановить дамп БД, если миграции v1.0.6–v1.0.7 уже применены и откат схемы не выполнялся штатными средствами Liquibase.
+3. Выполнить `docker compose up --build -d` на старой версии кода.
+
+## Изменение внешнего порта
+
+Порт публикации frontend задаётся в `deploy/docker-compose.yml` (по умолчанию `3000:80`). При смене левой части маппинга обновите правила firewall и reverse proxy. Внутренняя схема проксирования `/api` → `applicants-service:8080` в `frontend/nginx.conf` менять не требуется.
+
+---
+
+Вопросы по первичной установке, SonarQube и локальной разработке — в [README.md](../../README.md).
