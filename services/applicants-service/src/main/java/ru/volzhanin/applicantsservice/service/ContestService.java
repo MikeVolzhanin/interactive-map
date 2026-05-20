@@ -6,28 +6,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.volzhanin.applicantsservice.dto.contest.ContestExtraFieldDto;
 import ru.volzhanin.applicantsservice.dto.contest.ContestImportResultDto;
+import ru.volzhanin.applicantsservice.dto.map.ContestPublicDto;
+import ru.volzhanin.applicantsservice.entity.Contest;
 import ru.volzhanin.applicantsservice.entity.ContestExtraField;
-import ru.volzhanin.applicantsservice.entity.ContestParticipant;
-import ru.volzhanin.applicantsservice.entity.Role;
-import ru.volzhanin.applicantsservice.entity.User;
 import ru.volzhanin.applicantsservice.repository.ContestExtraFieldRepository;
-import ru.volzhanin.applicantsservice.repository.ContestParticipantRepository;
-import ru.volzhanin.applicantsservice.repository.UsersRepository;
+import ru.volzhanin.applicantsservice.repository.ContestRepository;
 import ru.volzhanin.applicantsservice.service.contest.ContestExcelColumnMapping;
 import ru.volzhanin.applicantsservice.service.contest.ContestExcelSupport;
 
@@ -37,11 +35,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,14 +47,24 @@ import java.util.Set;
 public class ContestService {
 
     private static final List<String> FIXED_EXPORT_FIELD_ORDER = List.of(
-            ContestExcelColumnMapping.EMAIL_HEADER,
-            ContestExcelColumnMapping.CONTESTS_HEADER,
-            ContestExcelColumnMapping.REGISTERED_ON_SITE_HEADER
+            ContestExcelColumnMapping.TITLE_HEADER,
+            ContestExcelColumnMapping.STATUS_HEADER,
+            ContestExcelColumnMapping.DEADLINE_HEADER
     );
 
-    private final ContestParticipantRepository contestParticipantRepository;
+    private final ContestRepository contestRepository;
     private final ContestExtraFieldRepository contestExtraFieldRepository;
-    private final UsersRepository usersRepository;
+
+    public List<ContestPublicDto> listPublicContests() {
+        return contestRepository.findAllByOrderByIdAsc().stream()
+                .map(c -> ContestPublicDto.builder()
+                        .id(c.getId())
+                        .title(c.getTitle())
+                        .status(c.getStatus())
+                        .deadline(c.getDeadline())
+                        .build())
+                .toList();
+    }
 
     public List<ContestExtraFieldDto> listExportFields() {
         return contestExtraFieldRepository.findAllByOrderByFieldLabelAsc().stream()
@@ -70,15 +76,19 @@ public class ContestService {
     }
 
     @Transactional
+    public int clearContests() {
+        int deletedCount = contestRepository.findAllByOrderByIdAsc().size();
+        contestRepository.deleteAllInBatch();
+        return deletedCount;
+    }
+
+    @Transactional
     public ContestImportResultDto importContestsFromFile(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Файл не передан");
         }
 
         int rowsProcessed = 0;
-        int registeredOnSiteCount = 0;
-        int notRegisteredOnSiteCount = 0;
-        Set<String> verifiedEmails = loadVerifiedUserEmails();
 
         try (InputStream inputStream = file.getInputStream();
              Workbook workbook = new XSSFWorkbook(inputStream)) {
@@ -97,51 +107,44 @@ public class ContestService {
                     continue;
                 }
 
-                String email = ContestExcelSupport.readCell(row, mapping.emailColumnIndex(), formatter, evaluator);
-                String contestName = ContestExcelSupport.readCell(
-                        row, mapping.contestNameColumnIndex(), formatter, evaluator
-                );
+                String title = ContestExcelSupport.readCell(row, mapping.titleColumnIndex(), formatter, evaluator);
+                String status = ContestExcelSupport.readCell(row, mapping.statusColumnIndex(), formatter, evaluator);
+                String deadline = ContestExcelSupport.readCell(row, mapping.deadlineColumnIndex(), formatter, evaluator);
 
-                if (email.isBlank() || contestName.isBlank()) {
+                if (title.isBlank()) {
                     throw new IllegalArgumentException(
-                            "Строка " + (rowIndex + 1) + ": заполните почту и название конкурса"
+                            "Строка " + (rowIndex + 1) + ": укажите название конкурса"
                     );
                 }
 
-                String normalizedEmail = email.toLowerCase(Locale.ROOT);
+                String trimmedTitle = title.trim();
                 Map<String, String> extraData = readExtraColumns(row, mapping, formatter, evaluator);
 
-                ContestParticipant participant = contestParticipantRepository
-                        .findByEmailIgnoreCaseAndContestName(normalizedEmail, contestName)
-                        .orElseGet(() -> ContestParticipant.builder()
-                                .email(normalizedEmail)
-                                .contestName(contestName)
+                Contest contest = contestRepository.findFirstByTitleIgnoreCase(trimmedTitle)
+                        .orElseGet(() -> Contest.builder()
+                                .title(trimmedTitle)
+                                .status("")
+                                .deadline("")
                                 .extraData(new LinkedHashMap<>())
                                 .build());
 
-                if (participant.getExtraData() == null) {
-                    participant.setExtraData(new LinkedHashMap<>());
+                contest.setTitle(trimmedTitle);
+                contest.setStatus(status.trim());
+                contest.setDeadline(deadline.trim());
+                if (contest.getExtraData() == null) {
+                    contest.setExtraData(new LinkedHashMap<>());
                 }
-                participant.getExtraData().putAll(extraData);
-                contestParticipantRepository.save(participant);
+                contest.getExtraData().putAll(extraData);
+                contestRepository.save(contest);
                 rowsProcessed++;
-                if (verifiedEmails.contains(normalizedEmail)) {
-                    registeredOnSiteCount++;
-                } else {
-                    notRegisteredOnSiteCount++;
-                }
             }
         }
 
-        log.info("Импорт конкурсов: файл={}, сохранено={}, на сайте={}, вне сайта={}",
-                file.getOriginalFilename(), rowsProcessed, registeredOnSiteCount, notRegisteredOnSiteCount);
+        log.info("Импорт конкурсов: файл={}, сохранено строк={}", file.getOriginalFilename(), rowsProcessed);
 
         return ContestImportResultDto.builder()
                 .rowsProcessed(rowsProcessed)
-                .rowsSkipped(0)
-                .registeredOnSiteCount(registeredOnSiteCount)
-                .notRegisteredOnSiteCount(notRegisteredOnSiteCount)
-                .message(buildImportMessage(rowsProcessed, registeredOnSiteCount, notRegisteredOnSiteCount))
+                .message("Импорт завершён. Обновлено или добавлено конкурсов: %d.".formatted(rowsProcessed))
                 .build();
     }
 
@@ -156,8 +159,7 @@ public class ContestService {
         List<String> extraHeaders = resolveSelectedExtraHeaders(selectedFields);
         validateExportSelection(fixedHeaders, extraHeaders);
 
-        boolean includeSiteUsersWithoutContests = fixedHeaders.contains(ContestExcelColumnMapping.EMAIL_HEADER);
-        List<ContestExportRow> exportRows = buildExportRows(includeSiteUsersWithoutContests);
+        List<ContestExportRow> exportRows = buildExportRows();
         List<String> exportHeaders = buildExportHeaders(fixedHeaders, extraHeaders);
 
         try (Workbook workbook = new XSSFWorkbook()) {
@@ -220,13 +222,6 @@ public class ContestService {
         if (fixedHeaders.isEmpty() && extraHeaders.isEmpty()) {
             throw new IllegalArgumentException("Выберите хотя бы одно поле для выгрузки");
         }
-        boolean hasEmail = fixedHeaders.contains(ContestExcelColumnMapping.EMAIL_HEADER);
-        boolean hasRegisteredOnSite = fixedHeaders.contains(ContestExcelColumnMapping.REGISTERED_ON_SITE_HEADER);
-        if (hasRegisteredOnSite && !hasEmail) {
-            throw new IllegalArgumentException(
-                    "Поле registeredOnSite доступно только при выборе email"
-            );
-        }
     }
 
     private boolean isFixedExportField(String field) {
@@ -248,58 +243,20 @@ public class ContestService {
         }
     }
 
-    private Set<String> loadVerifiedUserEmails() {
-        Set<String> verifiedEmails = new HashSet<>();
-        for (User user : usersRepository.findByRoleAndEmailVerifiedTrue(Role.USER)) {
-            verifiedEmails.add(user.getEmail().toLowerCase(Locale.ROOT));
-        }
-        for (User user : usersRepository.findByRoleAndEmailVerifiedTrue(Role.ADMIN)) {
-            verifiedEmails.add(user.getEmail().toLowerCase(Locale.ROOT));
-        }
-        return verifiedEmails;
-    }
-
-    private String buildImportMessage(int rowsProcessed, int registeredOnSiteCount, int notRegisteredOnSiteCount) {
-        return "Импорт завершён. Сохранено записей: %d. Зарегистрированы на сайте: %d. "
-                .formatted(rowsProcessed, registeredOnSiteCount)
-                + "Только в таблице конкурсов (без создания учётной записи): %d."
-                .formatted(notRegisteredOnSiteCount);
-    }
-
-    private List<ContestExportRow> buildExportRows(boolean includeSiteUsersWithoutContests) {
-        List<ContestParticipant> participants = contestParticipantRepository.findAllByOrderByContestNameAscEmailAsc();
-        List<User> siteUsers = new ArrayList<>();
-        siteUsers.addAll(usersRepository.findByRoleAndEmailVerifiedTrue(Role.USER));
-        siteUsers.addAll(usersRepository.findByRoleAndEmailVerifiedTrue(Role.ADMIN));
-        Set<String> verifiedEmails = loadVerifiedUserEmails();
-
+    private List<ContestExportRow> buildExportRows() {
+        List<Contest> contests = contestRepository.findAllByOrderByIdAsc();
         List<ContestExportRow> rows = new ArrayList<>();
-        Set<String> emailsWithContestRows = new HashSet<>();
-
-        for (ContestParticipant participant : participants) {
-            String email = participant.getEmail().toLowerCase(Locale.ROOT);
-            emailsWithContestRows.add(email);
+        for (Contest c : contests) {
             rows.add(new ContestExportRow(
-                    email,
-                    participant.getContestName(),
-                    copyExtraData(participant.getExtraData()),
-                    verifiedEmails.contains(email)
+                    c.getTitle(),
+                    c.getStatus(),
+                    c.getDeadline(),
+                    copyExtraData(c.getExtraData())
             ));
         }
-
-        if (includeSiteUsersWithoutContests) {
-            for (User user : siteUsers) {
-                String email = user.getEmail().toLowerCase(Locale.ROOT);
-                if (!emailsWithContestRows.contains(email)) {
-                    rows.add(new ContestExportRow(email, "", new LinkedHashMap<>(), true));
-                }
-            }
-        }
-
         rows.sort(Comparator
-                .comparing(ContestExportRow::email)
-                .thenComparing(ContestExportRow::contestName, Comparator.nullsFirst(String::compareToIgnoreCase)));
-
+                .comparing(ContestExportRow::title, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(ContestExportRow::status, String.CASE_INSENSITIVE_ORDER));
         return rows;
     }
 
@@ -352,14 +309,14 @@ public class ContestService {
     }
 
     private String resolveExportValue(String header, ContestExportRow exportRow, List<String> extraHeaders) {
-        if (ContestExcelColumnMapping.EMAIL_HEADER.equals(header)) {
-            return exportRow.email();
+        if (ContestExcelColumnMapping.TITLE_HEADER.equals(header)) {
+            return exportRow.title();
         }
-        if (ContestExcelColumnMapping.CONTESTS_HEADER.equals(header)) {
-            return exportRow.contestName();
+        if (ContestExcelColumnMapping.STATUS_HEADER.equals(header)) {
+            return exportRow.status();
         }
-        if (ContestExcelColumnMapping.REGISTERED_ON_SITE_HEADER.equals(header)) {
-            return exportRow.registeredOnSite() ? "Да" : "Нет";
+        if (ContestExcelColumnMapping.DEADLINE_HEADER.equals(header)) {
+            return exportRow.deadline();
         }
         if (extraHeaders.contains(header)) {
             return exportRow.extraData().getOrDefault(header, "");
@@ -368,10 +325,10 @@ public class ContestService {
     }
 
     private record ContestExportRow(
-            String email,
-            String contestName,
-            Map<String, String> extraData,
-            boolean registeredOnSite
+            String title,
+            String status,
+            String deadline,
+            Map<String, String> extraData
     ) {
     }
 

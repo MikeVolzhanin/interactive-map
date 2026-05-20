@@ -510,6 +510,18 @@
   background: #EBF0FA;
 }
 
+.exportBtnDanger {
+  color: #ffffff;
+  background: #dc2626;
+  border: 1.5px solid #dc2626;
+  font-weight: 700;
+}
+
+.exportBtnDanger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
 .contestNote {
   font-size: 14px;
   color: #929292;

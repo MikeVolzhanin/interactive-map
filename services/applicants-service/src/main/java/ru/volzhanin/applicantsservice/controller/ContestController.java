@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,8 +26,9 @@ import ru.volzhanin.applicantsservice.service.ContestService;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
-@Tag(name = "Конкурсы (админ)", description = "Экспорт и импорт участников конкурсов")
+@Tag(name = "Конкурсы (админ)", description = "Экспорт и импорт списка конкурсов")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequiredArgsConstructor
@@ -44,7 +46,7 @@ public class ContestController {
     }
 
     @Operation(summary = "Экспорт конкурсов в Excel",
-            description = "Возвращает XLSX: email, конкурсы, выбранные доп. поля, registeredOnSite")
+            description = "Возвращает XLSX: название, статус, дата окончания и выбранные доп. поля")
     @ApiResponse(responseCode = "200", description = "Файл Excel",
             content = @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
     @ApiResponse(responseCode = "400", description = "Некорректный запрос",
@@ -58,7 +60,7 @@ public class ContestController {
     }
 
     @Operation(summary = "Импорт конкурсов из Excel",
-            description = "Принимает XLSX с почтой, конкурсами и доп. столбцами; учётные записи не создаются")
+            description = "XLSX: обязательные столбцы «название», «статус», «дата окончания»; прочие столбцы — доп. поля")
     @ApiResponse(responseCode = "200", description = "Результат импорта",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ContestImportResultDto.class)))
     @ApiResponse(responseCode = "400", description = "Некорректный файл",
@@ -68,5 +70,17 @@ public class ContestController {
             @RequestParam("file") MultipartFile file
     ) throws IOException {
         return ResponseEntity.ok(contestService.importContestsFromFile(file));
+    }
+
+    @Operation(summary = "Очистка конкурсов",
+            description = "Удаляет все конкурсы из системы")
+    @ApiResponse(responseCode = "200", description = "Конкурсы удалены")
+    @DeleteMapping
+    public Map<String, Object> clearContests() {
+        int deleted = contestService.clearContests();
+        return Map.of(
+                "deleted", deleted,
+                "message", "Удалено конкурсов: " + deleted
+        );
     }
 }

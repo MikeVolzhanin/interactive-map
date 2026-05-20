@@ -11,13 +11,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import ru.volzhanin.applicantsservice.dto.contest.ContestImportResultDto;
+import ru.volzhanin.applicantsservice.entity.Contest;
 import ru.volzhanin.applicantsservice.entity.ContestExtraField;
-import ru.volzhanin.applicantsservice.entity.ContestParticipant;
-import ru.volzhanin.applicantsservice.entity.Role;
-import ru.volzhanin.applicantsservice.entity.User;
 import ru.volzhanin.applicantsservice.repository.ContestExtraFieldRepository;
-import ru.volzhanin.applicantsservice.repository.ContestParticipantRepository;
-import ru.volzhanin.applicantsservice.repository.UsersRepository;
+import ru.volzhanin.applicantsservice.repository.ContestRepository;
 import ru.volzhanin.applicantsservice.service.contest.ContestExcelColumnMapping;
 
 import java.io.ByteArrayInputStream;
@@ -37,40 +34,40 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ContestServiceTest {
 
-    @Mock private ContestParticipantRepository contestParticipantRepository;
-    @Mock private ContestExtraFieldRepository contestExtraFieldRepository;
-    @Mock private UsersRepository usersRepository;
+    @Mock
+    private ContestRepository contestRepository;
+    @Mock
+    private ContestExtraFieldRepository contestExtraFieldRepository;
 
     @InjectMocks
     private ContestService contestService;
 
     @Test
-    void importContestsFromFile_missingEmailColumn_throws() throws IOException {
+    void importContestsFromFile_missingTitleColumn_throws() throws IOException {
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "contests.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 buildWorkbookBytes(sheet -> {
                     Row header = sheet.createRow(0);
-                    header.createCell(0).setCellValue("конкурсы");
-                    Row row = sheet.createRow(1);
-                    row.createCell(0).setCellValue("Олимпиада");
+                    header.createCell(0).setCellValue("статус");
+                    header.createCell(1).setCellValue("дата окончания");
                 })
         );
 
         assertThatThrownBy(() -> contestService.importContestsFromFile(file))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("почт");
+                .hasMessageContaining("назван");
     }
 
     @Test
-    void importContestsFromFile_savesParticipantAndRegistersExtraFields() throws IOException {
+    void importContestsFromFile_savesContestAndRegistersExtraFields() throws IOException {
         when(contestExtraFieldRepository.findByFieldKey(any())).thenReturn(Optional.empty());
         when(contestExtraFieldRepository.save(any(ContestExtraField.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        when(contestParticipantRepository.findByEmailIgnoreCaseAndContestName("user@test.ru", "Олимпиада"))
+        when(contestRepository.findFirstByTitleIgnoreCase("Олимпиада"))
                 .thenReturn(Optional.empty());
-        when(contestParticipantRepository.save(any(ContestParticipant.class)))
+        when(contestRepository.save(any(Contest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         MockMultipartFile file = new MockMultipartFile(
@@ -79,14 +76,14 @@ class ContestServiceTest {
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 buildWorkbookBytes(sheet -> {
                     Row header = sheet.createRow(0);
-                    header.createCell(0).setCellValue("email");
-                    header.createCell(1).setCellValue("конкурсы");
-                    header.createCell(2).setCellValue("Статус");
+                    header.createCell(0).setCellValue("название");
+                    header.createCell(1).setCellValue("статус");
+                    header.createCell(2).setCellValue("дата окончания");
                     header.createCell(3).setCellValue("Описание");
                     Row row = sheet.createRow(1);
-                    row.createCell(0).setCellValue("user@test.ru");
-                    row.createCell(1).setCellValue("Олимпиада");
-                    row.createCell(2).setCellValue("Участник");
+                    row.createCell(0).setCellValue("Олимпиада");
+                    row.createCell(1).setCellValue("Прием заявок");
+                    row.createCell(2).setCellValue("до 20 мая");
                     row.createCell(3).setCellValue("Очный этап");
                 })
         );
@@ -95,12 +92,12 @@ class ContestServiceTest {
 
         assertThat(result.getRowsProcessed()).isEqualTo(1);
 
-        ArgumentCaptor<ContestParticipant> captor = ArgumentCaptor.forClass(ContestParticipant.class);
-        verify(contestParticipantRepository).save(captor.capture());
-        ContestParticipant saved = captor.getValue();
-        assertThat(saved.getEmail()).isEqualTo("user@test.ru");
-        assertThat(saved.getContestName()).isEqualTo("Олимпиада");
-        assertThat(saved.getExtraData()).containsEntry("Статус", "Участник");
+        ArgumentCaptor<Contest> captor = ArgumentCaptor.forClass(Contest.class);
+        verify(contestRepository).save(captor.capture());
+        Contest saved = captor.getValue();
+        assertThat(saved.getTitle()).isEqualTo("Олимпиада");
+        assertThat(saved.getStatus()).isEqualTo("Прием заявок");
+        assertThat(saved.getDeadline()).isEqualTo("до 20 мая");
         assertThat(saved.getExtraData()).containsEntry("Описание", "Очный этап");
 
         verify(contestExtraFieldRepository).save(any(ContestExtraField.class));
@@ -108,58 +105,38 @@ class ContestServiceTest {
 
     @Test
     void writeContestsToStream_exportsOnlySelectedColumns() throws IOException {
-        ContestParticipant participant = ContestParticipant.builder()
-                .email("user@test.ru")
-                .contestName("Олимпиада")
+        Contest contest = Contest.builder()
+                .title("Олимпиада")
+                .status("Открыт")
+                .deadline("до 15 июня")
                 .extraData(new LinkedHashMap<>(Map.of(
                         "Город", "Москва",
-                        "Статус", "Участник"
+                        "Формат", "Очно"
                 )))
                 .build();
 
-        User siteUser = User.builder()
-                .email("user@test.ru")
-                .role(Role.USER)
-                .emailVerified(true)
-                .build();
-
-        when(contestParticipantRepository.findAllByOrderByContestNameAscEmailAsc())
-                .thenReturn(List.of(participant));
-        when(usersRepository.findByRoleAndEmailVerifiedTrue(Role.USER))
-                .thenReturn(List.of(siteUser));
-        when(usersRepository.findByRoleAndEmailVerifiedTrue(Role.ADMIN))
-                .thenReturn(List.of());
+        when(contestRepository.findAllByOrderByIdAsc()).thenReturn(List.of(contest));
         when(contestExtraFieldRepository.findAllByOrderByFieldLabelAsc())
                 .thenReturn(List.of(
                         field("gorod", "Город"),
-                        field("status", "Статус")
+                        field("format", "Формат")
                 ));
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         contestService.writeContestsToStream(
                 outputStream,
-                List.of(ContestExcelColumnMapping.CONTESTS_HEADER, "Город")
+                List.of(ContestExcelColumnMapping.TITLE_HEADER, "Город")
         );
 
         try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(outputStream.toByteArray()))) {
             Sheet sheet = workbook.getSheetAt(0);
             assertThat(sheet.getRow(0).getCell(0).getStringCellValue())
-                    .isEqualTo(ContestExcelColumnMapping.CONTESTS_HEADER);
+                    .isEqualTo(ContestExcelColumnMapping.TITLE_HEADER);
             assertThat(sheet.getRow(0).getCell(1).getStringCellValue()).isEqualTo("Город");
             assertThat(sheet.getPhysicalNumberOfRows()).isEqualTo(2);
             assertThat(sheet.getRow(1).getCell(0).getStringCellValue()).isEqualTo("Олимпиада");
             assertThat(sheet.getRow(1).getCell(1).getStringCellValue()).isEqualTo("Москва");
         }
-    }
-
-    @Test
-    void writeContestsToStream_registeredOnSiteWithoutEmail_throws() {
-        assertThatThrownBy(() -> contestService.writeContestsToStream(
-                new ByteArrayOutputStream(),
-                List.of(ContestExcelColumnMapping.REGISTERED_ON_SITE_HEADER)
-        ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("email");
     }
 
     @Test
@@ -173,68 +150,21 @@ class ContestServiceTest {
     }
 
     @Test
-    void writeContestsToStream_includesSiteUsersWithoutContestRowsWhenEmailSelected() throws IOException {
-        User withContest = User.builder()
-                .email("with@test.ru")
-                .role(Role.USER)
-                .emailVerified(true)
-                .build();
-        User withoutContest = User.builder()
-                .email("without@test.ru")
-                .role(Role.USER)
-                .emailVerified(true)
-                .build();
-
-        ContestParticipant participant = ContestParticipant.builder()
-                .email("with@test.ru")
-                .contestName("Олимпиада")
-                .extraData(new LinkedHashMap<>())
-                .build();
-
-        when(contestParticipantRepository.findAllByOrderByContestNameAscEmailAsc())
-                .thenReturn(List.of(participant));
-        when(usersRepository.findByRoleAndEmailVerifiedTrue(Role.USER))
-                .thenReturn(List.of(withContest, withoutContest));
-        when(usersRepository.findByRoleAndEmailVerifiedTrue(Role.ADMIN))
-                .thenReturn(List.of());
-        when(contestExtraFieldRepository.findAllByOrderByFieldLabelAsc())
-                .thenReturn(List.of());
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        contestService.writeContestsToStream(
-                outputStream,
-                List.of(
-                        ContestExcelColumnMapping.EMAIL_HEADER,
-                        ContestExcelColumnMapping.CONTESTS_HEADER,
-                        ContestExcelColumnMapping.REGISTERED_ON_SITE_HEADER
-                )
-        );
-
-        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(outputStream.toByteArray()))) {
-            Sheet sheet = workbook.getSheetAt(0);
-            assertThat(sheet.getLastRowNum()).isEqualTo(2);
-            assertThat(sheet.getRow(2).getCell(0).getStringCellValue()).isEqualTo("without@test.ru");
-        }
-    }
-
-    @Test
     void writeContestsToStream_whenNoData_returnsHeaderOnlyWorkbook() throws IOException {
-        when(contestParticipantRepository.findAllByOrderByContestNameAscEmailAsc()).thenReturn(List.of());
-        when(usersRepository.findByRoleAndEmailVerifiedTrue(Role.USER)).thenReturn(List.of());
-        when(usersRepository.findByRoleAndEmailVerifiedTrue(Role.ADMIN)).thenReturn(List.of());
+        when(contestRepository.findAllByOrderByIdAsc()).thenReturn(List.of());
         when(contestExtraFieldRepository.findAllByOrderByFieldLabelAsc()).thenReturn(List.of());
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         contestService.writeContestsToStream(
                 outputStream,
-                List.of(ContestExcelColumnMapping.EMAIL_HEADER)
+                List.of(ContestExcelColumnMapping.TITLE_HEADER)
         );
 
         try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(outputStream.toByteArray()))) {
             Sheet sheet = workbook.getSheetAt(0);
             assertThat(sheet.getLastRowNum()).isZero();
             assertThat(sheet.getRow(0).getCell(0).getStringCellValue())
-                    .isEqualTo(ContestExcelColumnMapping.EMAIL_HEADER);
+                    .isEqualTo(ContestExcelColumnMapping.TITLE_HEADER);
         }
     }
 

@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,24 +24,21 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(
-        name = "contest_participant",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_contest_participant_email_contest",
-                columnNames = {"email", "contest_name"}
-        )
-)
-public class ContestParticipant {
+@Table(name = "contest")
+public class Contest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 256)
-    private String email;
+    @Column(nullable = false, length = 512)
+    private String title;
 
-    @Column(name = "contest_name", nullable = false, length = 512)
-    private String contestName;
+    @Column(nullable = false, length = 512)
+    private String status;
+
+    @Column(nullable = false, length = 512)
+    private String deadline;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)

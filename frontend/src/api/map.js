@@ -15,6 +15,10 @@ export async function fetchInterestStats(regionId) {
   return publicRequest(`/api/map/interests${query}`)
 }
 
+export async function fetchContests() {
+  return publicRequest('/api/map/contests')
+}
+
 async function publicRequest(url) {
   const res = await fetch(url)
 

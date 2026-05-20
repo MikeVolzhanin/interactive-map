@@ -11,8 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ContestImportResultDto {
     private int rowsProcessed;
-    private int rowsSkipped;
-    private int registeredOnSiteCount;
-    private int notRegisteredOnSiteCount;
     private String message;
 }

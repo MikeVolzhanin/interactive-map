@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchInterestStats, fetchNews, fetchRegionCatalog, fetchRegionStats } from '../../api/map.js'
+import { fetchContests, fetchInterestStats, fetchNews, fetchRegionCatalog, fetchRegionStats } from '../../api/map.js'
 import RussiaGeoMap from '../../components/RussiaGeoMap/RussiaGeoMap.jsx'
 import {
   canShowGeoMapSwitcher,
@@ -106,13 +106,6 @@ const REGIONS = [
   { id: 79, code: 'ХРС', name: 'Херсонская область', x: 2, y: 8 },
 ]
 
-const CONTESTS = [
-  { id: 1, title: 'Олимпиада школьников', status: 'Прием заявок', deadline: 'до 20 мая' },
-  { id: 2, title: 'Конкурс проектных работ', status: 'Идет отбор', deadline: 'до 28 мая' },
-  { id: 3, title: 'Региональный трек', status: 'Скоро старт', deadline: 'с 1 июня' },
-  { id: 4, title: 'Портфолио абитуриента', status: 'Открыт', deadline: 'до 15 июня' },
-]
-
 function getIntensity(count, maxCount) {
   if (count === 0) return 0
   if (count < maxCount * 0.18) return 1
@@ -150,6 +143,9 @@ export default function MapPage() {
   const [interestsError, setInterestsError] = useState('')
   const [regionInterests, setRegionInterests] = useState({})
   const [hoveredRegion, setHoveredRegion] = useState(null)
+  const [contests, setContests] = useState([])
+  const [isContestsLoading, setIsContestsLoading] = useState(true)
+  const [contestsError, setContestsError] = useState('')
 
   useEffect(() => {
     let ignore = false
@@ -171,6 +167,31 @@ export default function MapPage() {
       })
       .catch(() => {
         if (!ignore) setGeoFeatureNames([])
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    fetchContests()
+      .then(data => {
+        if (!ignore) {
+          setContests(Array.isArray(data) ? data : [])
+          setContestsError('')
+        }
+      })
+      .catch(error => {
+        if (!ignore) {
+          setContests([])
+          setContestsError(error.message || 'Не удалось загрузить конкурсы')
+        }
+      })
+      .finally(() => {
+        if (!ignore) setIsContestsLoading(false)
       })
 
     return () => {
@@ -589,10 +610,18 @@ export default function MapPage() {
           <section className={styles.sidePanel}>
             <div className={styles.sideHeader}>
               <h2 className={styles.sideTitle}>Конкурсы</h2>
-              <span className={styles.sideBadge}>{CONTESTS.length}</span>
+              <span className={styles.sideBadge}>{contests.length}</span>
             </div>
+            {(isContestsLoading || contestsError) && (
+              <div className={`${styles.newsStatus} ${contestsError ? styles.newsStatusError : ''}`}>
+                {contestsError || 'Загружаем конкурсы...'}
+              </div>
+            )}
+            {!isContestsLoading && !contestsError && contests.length === 0 && (
+              <div className={styles.newsStatus}>Конкурсы пока не добавлены</div>
+            )}
             <ul className={styles.contestList}>
-              {CONTESTS.map(item => (
+              {contests.map(item => (
                 <li key={item.id} className={styles.contestItem}>
                   <span className={styles.contestTitle}>{item.title}</span>
                   <span className={styles.contestMeta}>{item.status}</span>

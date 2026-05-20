@@ -11,15 +11,16 @@ import {
   adminExportUsers,
   adminExportContests,
   adminImportContests,
+  adminClearContests,
   adminFetchContestExportFields,
 } from '../../api/admin.js'
 import { logout } from '../../api/auth.js'
 import styles from './AdminPage.module.css'
 
 const CONTEST_BASE_EXPORT_FIELDS = [
-  { key: 'email',             label: 'E-mail' },
-  { key: 'конкурсы',          label: 'Конкурсы' },
-  { key: 'registeredOnSite',  label: 'Зарегистрирован на сайте' },
+  { key: 'название', label: 'Название' },
+  { key: 'статус', label: 'Статус' },
+  { key: 'дата окончания', label: 'Дата окончания' },
 ]
 
 const EXPORT_FIELDS = [
@@ -401,6 +402,7 @@ export default function AdminPage() {
   const [loadingContestFields, setLoadingContestFields] = useState(true)
   const [contestExporting,     setContestExporting]     = useState(false)
   const [contestImporting,     setContestImporting]     = useState(false)
+  const [contestClearing,      setContestClearing]      = useState(false)
   const [contestError,         setContestError]         = useState('')
   const [contestSuccess,       setContestSuccess]       = useState('')
   const contestFileRef = useRef(null)
@@ -474,20 +476,6 @@ export default function AdminPage() {
   function toggleContestBaseField(key) {
     setContestBaseFields((prev) => {
       const next = new Set(prev)
-      if (key === 'email') {
-        if (next.has('email')) {
-          next.delete('email')
-          next.delete('registeredOnSite')
-        } else {
-          next.add('email')
-        }
-        return next
-      }
-      if (key === 'registeredOnSite') {
-        if (!prev.has('email')) return prev
-        next.has(key) ? next.delete(key) : next.add(key)
-        return next
-      }
       next.has(key) ? next.delete(key) : next.add(key)
       return next
     })
@@ -502,7 +490,6 @@ export default function AdminPage() {
   }
 
   const contestSelectedCount = contestBaseFields.size + contestExportFields.size
-  const contestEmailSelected = contestBaseFields.has('email')
 
   async function handleContestExport() {
     if (contestSelectedCount === 0) {
@@ -541,6 +528,23 @@ export default function AdminPage() {
       setContestError(err.message)
     } finally {
       setContestImporting(false)
+    }
+  }
+
+  async function handleContestClear() {
+    if (!confirm('Удалить все конкурсы из системы? Это действие нельзя отменить.')) return
+
+    setContestClearing(true); setContestError(''); setContestSuccess('')
+    try {
+      const result = await adminClearContests()
+      setContestSuccess(result?.message ?? 'Конкурсы удалены')
+      setContestExportFields(new Set())
+      await loadContestExportFields()
+      setTimeout(() => setContestSuccess(''), 6000)
+    } catch (err) {
+      setContestError(err.message)
+    } finally {
+      setContestClearing(false)
     }
   }
 
@@ -633,35 +637,27 @@ export default function AdminPage() {
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Конкурсы</h2>
             <p className={styles.contestNote}>
-              В загружаемом файле должны быть столбцы <strong>email</strong> и <strong>конкурсы</strong>.
-              Остальные столбцы (описание, статус и т.д.) сохраняются в БД и появляются в списке полей для выгрузки после импорта.
-              Учётные записи на сайте при импорте не создаются — данные попадают только в таблицу конкурсов.
+              В файле импорта должны быть столбцы <strong>название</strong>, <strong>статус</strong> и{' '}
+              <strong>дата окончания</strong> (текст, например «до 20 мая» или дата из Excel).
+              Остальные столбцы сохраняются как дополнительные поля и появляются в списке галочек для выгрузки после импорта.
               Пример: <a href="/samples/contests-import-sample.xlsx" download>contests-import-sample.xlsx</a>
             </p>
 
             <p className={styles.exportHint}>Выберите поля для включения в XLSX-файл:</p>
 
             <div className={styles.exportGrid}>
-              {CONTEST_BASE_EXPORT_FIELDS.map((f) => {
-                const needsEmail = f.key === 'registeredOnSite'
-                const disabled = contestExporting || contestImporting
-                  || (needsEmail && !contestEmailSelected)
-                return (
-                  <label
-                    key={f.key}
-                    className={`${styles.checkLabel} ${disabled && needsEmail ? styles.checkLabelDisabled : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      className={styles.checkbox}
-                      checked={contestBaseFields.has(f.key)}
-                      onChange={() => toggleContestBaseField(f.key)}
-                      disabled={disabled}
-                    />
-                    {f.label}
-                  </label>
-                )
-              })}
+              {CONTEST_BASE_EXPORT_FIELDS.map((f) => (
+                <label key={f.key} className={styles.checkLabel}>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={contestBaseFields.has(f.key)}
+                    onChange={() => toggleContestBaseField(f.key)}
+                    disabled={contestExporting || contestImporting || contestClearing}
+                  />
+                  {f.label}
+                </label>
+              ))}
               {!loadingContestFields && contestFieldOptions.map((f) => (
                 <label key={f.key} className={styles.checkLabel}>
                   <input
@@ -669,7 +665,7 @@ export default function AdminPage() {
                     className={styles.checkbox}
                     checked={contestExportFields.has(f.key)}
                     onChange={() => toggleContestField(f.key)}
-                    disabled={contestExporting || contestImporting}
+                    disabled={contestExporting || contestImporting || contestClearing}
                   />
                   {f.label}
                 </label>
@@ -680,12 +676,6 @@ export default function AdminPage() {
               <div className={styles.skeleton}>
                 {[1, 2].map((i) => <div key={i} className={styles.skeletonLine} />)}
               </div>
-            )}
-
-            {!contestEmailSelected && (
-              <p className={styles.contestFieldHint} role="note">
-                «Зарегистрирован на сайте» доступен только при выборе E-mail.
-              </p>
             )}
 
             {!loadingContestFields && contestFieldOptions.length === 0 && (
@@ -702,7 +692,7 @@ export default function AdminPage() {
                 type="button"
                 className={styles.exportBtn}
                 onClick={handleContestExport}
-                disabled={contestExporting || contestImporting || contestSelectedCount === 0}
+                disabled={contestExporting || contestImporting || contestClearing || contestSelectedCount === 0}
                 aria-busy={contestExporting}
               >
                 {contestExporting ? 'Формирование…' : 'Выгрузить XLSX'}
@@ -711,10 +701,19 @@ export default function AdminPage() {
                 type="button"
                 className={`${styles.exportBtn} ${styles.exportBtnSecondary}`}
                 onClick={handleContestImportClick}
-                disabled={contestExporting || contestImporting}
+                disabled={contestExporting || contestImporting || contestClearing}
                 aria-busy={contestImporting}
               >
                 {contestImporting ? 'Загрузка…' : 'Загрузить XLSX'}
+              </button>
+              <button
+                type="button"
+                className={`${styles.exportBtn} ${styles.exportBtnDanger}`}
+                onClick={handleContestClear}
+                disabled={contestExporting || contestImporting || contestClearing}
+                aria-busy={contestClearing}
+              >
+                {contestClearing ? 'Очистка…' : 'Удалить все конкурсы'}
               </button>
               <input
                 ref={contestFileRef}

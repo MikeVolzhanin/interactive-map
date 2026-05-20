@@ -5,13 +5,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public record ContestExcelColumnMapping(
-        int emailColumnIndex,
-        int contestNameColumnIndex,
+        int titleColumnIndex,
+        int statusColumnIndex,
+        int deadlineColumnIndex,
         Map<Integer, String> extraColumnsByIndex
 ) {
-    public static final String EMAIL_HEADER = "email";
-    public static final String CONTESTS_HEADER = "конкурсы";
-    public static final String REGISTERED_ON_SITE_HEADER = "registeredOnSite";
+    public static final String TITLE_HEADER = "название";
+    public static final String STATUS_HEADER = "статус";
+    public static final String DEADLINE_HEADER = "дата окончания";
 
     public ContestExcelColumnMapping {
         extraColumnsByIndex = extraColumnsByIndex == null

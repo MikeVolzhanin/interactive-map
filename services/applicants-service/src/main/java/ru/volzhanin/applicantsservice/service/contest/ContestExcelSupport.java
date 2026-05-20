@@ -14,17 +14,16 @@ import java.util.Set;
 
 public final class ContestExcelSupport {
 
-    private static final Set<String> EMAIL_ALIASES = Set.of(
-            "email", "mail", "почта", "емейл"
+    private static final Set<String> TITLE_ALIASES = Set.of(
+            "название", "названиеконкурса", "конкурс", "конкурсы", "title", "contestname", "contest", "имя"
     );
 
-    private static final Set<String> CONTEST_NAME_ALIASES = Set.of(
-            "contestname", "contest", "contesttitle", "названиеконкурса", "конкурс",
-            "конкурсы", "название", "contest_name"
+    private static final Set<String> STATUS_ALIASES = Set.of(
+            "статус", "status", "состояние"
     );
 
-    private static final Set<String> REGISTERED_ON_SITE_ALIASES = Set.of(
-            "registeredonsite", "registered", "зарегистрирован", "зарегистрированнасайте"
+    private static final Set<String> DEADLINE_ALIASES = Set.of(
+            "датаокончания", "датазавершения", "deadline", "срок", "срокподачи", "докогда", "окончание"
     );
 
     private ContestExcelSupport() {
@@ -35,8 +34,9 @@ public final class ContestExcelSupport {
             throw new IllegalArgumentException("В файле отсутствует строка заголовков");
         }
 
-        int emailIndex = -1;
-        int contestIndex = -1;
+        int titleIndex = -1;
+        int statusIndex = -1;
+        int deadlineIndex = -1;
         Map<Integer, String> extraColumns = new LinkedHashMap<>();
 
         short lastCell = headerRow.getLastCellNum();
@@ -47,36 +47,44 @@ public final class ContestExcelSupport {
             }
 
             String normalized = normalizeHeader(header);
-            if (matchesAlias(normalized, EMAIL_ALIASES)) {
-                if (emailIndex < 0) {
-                    emailIndex = columnIndex;
+            if (matchesAlias(normalized, TITLE_ALIASES)) {
+                if (titleIndex < 0) {
+                    titleIndex = columnIndex;
                 }
                 continue;
             }
-            if (matchesAlias(normalized, CONTEST_NAME_ALIASES)) {
-                if (contestIndex < 0) {
-                    contestIndex = columnIndex;
+            if (matchesAlias(normalized, STATUS_ALIASES)) {
+                if (statusIndex < 0) {
+                    statusIndex = columnIndex;
                 }
                 continue;
             }
-            if (matchesAlias(normalized, REGISTERED_ON_SITE_ALIASES)) {
+            if (matchesAlias(normalized, DEADLINE_ALIASES)) {
+                if (deadlineIndex < 0) {
+                    deadlineIndex = columnIndex;
+                }
                 continue;
             }
             extraColumns.put(columnIndex, header.trim());
         }
 
-        if (emailIndex < 0) {
+        if (titleIndex < 0) {
             throw new IllegalArgumentException(
-                    "В файле не найден столбец с почтой участника (ожидаются заголовки: email, e-mail, почта)"
+                    "В файле не найден столбец с названием конкурса (ожидаются заголовки: название, конкурсы, title)"
             );
         }
-        if (contestIndex < 0) {
+        if (statusIndex < 0) {
             throw new IllegalArgumentException(
-                    "В файле не найден столбец с конкурсами (ожидаются заголовки: конкурсы, contestName, конкурс, название конкурса)"
+                    "В файле не найден столбец со статусом (ожидаются заголовки: статус, status)"
+            );
+        }
+        if (deadlineIndex < 0) {
+            throw new IllegalArgumentException(
+                    "В файле не найден столбец с датой окончания (ожидаются: дата окончания, deadline, срок)"
             );
         }
 
-        return new ContestExcelColumnMapping(emailIndex, contestIndex, extraColumns);
+        return new ContestExcelColumnMapping(titleIndex, statusIndex, deadlineIndex, extraColumns);
     }
 
     public static String readCell(Row row, int columnIndex, DataFormatter formatter, FormulaEvaluator evaluator) {

@@ -141,3 +141,6 @@ export const adminImportContests = async (file) => {
     body: formData,
   })
 }
+
+export const adminClearContests = () =>
+  authorizedRequest('/api/admin/contests', { method: 'DELETE' })

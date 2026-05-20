@@ -2,8 +2,10 @@ package ru.volzhanin.applicantsservice.controller;
 
 import org.junit.jupiter.api.Test;
 import ru.volzhanin.applicantsservice.dto.RegionDto;
+import ru.volzhanin.applicantsservice.dto.map.ContestPublicDto;
 import ru.volzhanin.applicantsservice.dto.map.InterestApplicantsStatDto;
 import ru.volzhanin.applicantsservice.dto.map.RegionApplicantsStatDto;
+import ru.volzhanin.applicantsservice.service.ContestService;
 import ru.volzhanin.applicantsservice.service.MapService;
 import ru.volzhanin.applicantsservice.service.RegionService;
 
@@ -18,7 +20,8 @@ class MapControllerTest {
 
     private final MapService mapService = mock(MapService.class);
     private final RegionService regionService = mock(RegionService.class);
-    private final MapController controller = new MapController(mapService, regionService);
+    private final ContestService contestService = mock(ContestService.class);
+    private final MapController controller = new MapController(mapService, regionService, contestService);
 
     @Test
     void getRegionCatalog_delegatesToRegionService() {
@@ -62,5 +65,21 @@ class MapControllerTest {
 
         assertThat(result).containsExactly(stat);
         verify(mapService).getInterestApplicantsStats(82L);
+    }
+
+    @Test
+    void getContests_delegatesToContestService() {
+        ContestPublicDto dto = ContestPublicDto.builder()
+                .id(1L)
+                .title("Олимпиада")
+                .status("Прием заявок")
+                .deadline("до 20 мая")
+                .build();
+        when(contestService.listPublicContests()).thenReturn(List.of(dto));
+
+        List<ContestPublicDto> result = controller.getContests();
+
+        assertThat(result).containsExactly(dto);
+        verify(contestService).listPublicContests();
     }
 }
