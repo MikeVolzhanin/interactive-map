@@ -1,9 +1,11 @@
 package ru.volzhanin.applicantsservice.controller;
 
 import org.junit.jupiter.api.Test;
+import ru.volzhanin.applicantsservice.dto.RegionDto;
 import ru.volzhanin.applicantsservice.dto.map.InterestApplicantsStatDto;
 import ru.volzhanin.applicantsservice.dto.map.RegionApplicantsStatDto;
 import ru.volzhanin.applicantsservice.service.MapService;
+import ru.volzhanin.applicantsservice.service.RegionService;
 
 import java.util.List;
 
@@ -15,7 +17,19 @@ import static org.mockito.Mockito.when;
 class MapControllerTest {
 
     private final MapService mapService = mock(MapService.class);
-    private final MapController controller = new MapController(mapService);
+    private final RegionService regionService = mock(RegionService.class);
+    private final MapController controller = new MapController(mapService, regionService);
+
+    @Test
+    void getRegionCatalog_delegatesToRegionService() {
+        RegionDto region = new RegionDto(1L, "Москва");
+        when(regionService.getAll()).thenReturn(List.of(region));
+
+        List<RegionDto> result = controller.getRegionCatalog();
+
+        assertThat(result).containsExactly(region);
+        verify(regionService).getAll();
+    }
 
     @Test
     void getRegionApplicantsStats_delegatesToMapService() {

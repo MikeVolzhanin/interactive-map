@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.volzhanin.applicantsservice.dto.RegionDto;
 import ru.volzhanin.applicantsservice.dto.map.InterestApplicantsStatDto;
 import ru.volzhanin.applicantsservice.dto.map.RegionApplicantsStatDto;
 import ru.volzhanin.applicantsservice.service.MapService;
+import ru.volzhanin.applicantsservice.service.RegionService;
 
 import java.util.List;
 
@@ -23,6 +25,16 @@ import java.util.List;
 @RequestMapping("/api/map")
 public class MapController {
     private final MapService mapService;
+    private final RegionService regionService;
+
+    @Operation(summary = "Справочник регионов для карты")
+    @ApiResponse(responseCode = "200", description = "Актуальный список регионов",
+            content = @Content(mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = RegionDto.class))))
+    @GetMapping("/region-catalog")
+    public List<RegionDto> getRegionCatalog() {
+        return regionService.getAll();
+    }
 
     @Operation(summary = "Статистика абитуриентов по регионам")
     @ApiResponse(responseCode = "200", description = "Статистика по регионам",
