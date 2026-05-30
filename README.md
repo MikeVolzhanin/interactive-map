@@ -71,9 +71,6 @@ interactive-map/
 ├── db/                     # Liquibase миграции
 │   ├── db.changelog-master.xml
 │   └── changelog/
-│       ├── v1.0.0.xml      # Начальная схема
-│       ├── v1.0.1.xml      # Тестовые данные
-│       └── v1.0.2.xml      # Добавление роли пользователя
 └── deploy/
     ├── docker-compose.yml
     └── .env.example
