@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class UserService {
-    private static final String USER_NOT_FOUND = "Пользователь не найден";
+    private static final String USER_NOT_FOUND = "Пользователь не найден!";
 
     private final UsersRepository userRepository;
     private final EducationLevelRepository educationLevelRepository;

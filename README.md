@@ -88,6 +88,7 @@ interactive-map/
 ├── db/                     # Liquibase миграции (см. db/db.changelog-master.xml)
 │   ├── db.changelog-master.xml
 │   └── changelog/          # v1.0.0 … v1.0.7 (схема, конкурсы, доп. поля выгрузки)
+│   └── changelog/
 └── deploy/
     ├── docker-compose.yml
     └── .env.example
