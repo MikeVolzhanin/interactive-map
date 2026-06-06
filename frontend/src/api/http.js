@@ -50,11 +50,12 @@ async function getValidToken() {
 }
 
 export async function authorizedFetch(url, options = {}) {
+  const isFormData = options.body instanceof FormData
   const makeRequest = (token) =>
     fetch(url, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         Authorization: `Bearer ${token}`,
         ...options.headers,
       },

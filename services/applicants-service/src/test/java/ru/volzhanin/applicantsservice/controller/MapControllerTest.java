@@ -1,9 +1,13 @@
 package ru.volzhanin.applicantsservice.controller;
 
 import org.junit.jupiter.api.Test;
+import ru.volzhanin.applicantsservice.dto.RegionDto;
+import ru.volzhanin.applicantsservice.dto.map.ContestPublicDto;
 import ru.volzhanin.applicantsservice.dto.map.InterestApplicantsStatDto;
 import ru.volzhanin.applicantsservice.dto.map.RegionApplicantsStatDto;
+import ru.volzhanin.applicantsservice.service.ContestService;
 import ru.volzhanin.applicantsservice.service.MapService;
+import ru.volzhanin.applicantsservice.service.RegionService;
 
 import java.util.List;
 
@@ -15,7 +19,20 @@ import static org.mockito.Mockito.when;
 class MapControllerTest {
 
     private final MapService mapService = mock(MapService.class);
-    private final MapController controller = new MapController(mapService);
+    private final RegionService regionService = mock(RegionService.class);
+    private final ContestService contestService = mock(ContestService.class);
+    private final MapController controller = new MapController(mapService, regionService, contestService);
+
+    @Test
+    void getRegionCatalog_delegatesToRegionService() {
+        RegionDto region = new RegionDto(1L, "Москва");
+        when(regionService.getAll()).thenReturn(List.of(region));
+
+        List<RegionDto> result = controller.getRegionCatalog();
+
+        assertThat(result).containsExactly(region);
+        verify(regionService).getAll();
+    }
 
     @Test
     void getRegionApplicantsStats_delegatesToMapService() {
@@ -48,5 +65,37 @@ class MapControllerTest {
 
         assertThat(result).containsExactly(stat);
         verify(mapService).getInterestApplicantsStats(82L);
+    }
+
+    @Test
+    void getContests_delegatesToContestServiceWithSortNone() {
+        ContestPublicDto dto = ContestPublicDto.builder()
+                .id(1L)
+                .title("Олимпиада")
+                .status("Прием заявок")
+                .deadline("до 20 мая")
+                .build();
+        when(contestService.listPublicContests("none")).thenReturn(List.of(dto));
+
+        List<ContestPublicDto> result = controller.getContests("none");
+
+        assertThat(result).containsExactly(dto);
+        verify(contestService).listPublicContests("none");
+    }
+
+    @Test
+    void getContests_delegatesToContestServiceWithSortDeadline() {
+        ContestPublicDto dto = ContestPublicDto.builder()
+                .id(2L)
+                .title("Конкурс")
+                .status("Открыт")
+                .deadline("2026-05-28")
+                .build();
+        when(contestService.listPublicContests("deadline")).thenReturn(List.of(dto));
+
+        List<ContestPublicDto> result = controller.getContests("deadline");
+
+        assertThat(result).containsExactly(dto);
+        verify(contestService).listPublicContests("deadline");
     }
 }

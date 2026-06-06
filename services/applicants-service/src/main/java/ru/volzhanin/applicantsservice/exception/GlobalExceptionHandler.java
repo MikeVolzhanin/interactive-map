@@ -37,11 +37,21 @@ public class GlobalExceptionHandler {
         return ErrorResponse.of(HttpStatus.NOT_FOUND.value(), ex.getMessage());
     }
 
+    @ExceptionHandler(ContestDataNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleContestDataNotFound(ContestDataNotFoundException ex) {
+        return ErrorResponse.of(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNoResourceFound(NoResourceFoundException ex) {
-        log.debug("Ресурс не найден: {}", ex.getMessage());
-        return ErrorResponse.of(HttpStatus.NOT_FOUND.value(), "Ресурс не найден");
+        log.debug("Ресурс не найден: {}", ex.getResourcePath());
+        String path = ex.getResourcePath() != null ? ex.getResourcePath() : "";
+        String message = path.startsWith("/api/admin/contests")
+                ? "Сервис конкурсов недоступен. Проверьте, что API /api/admin/contests подключён на сервере."
+                : "Ресурс не найден: " + path;
+        return ErrorResponse.of(HttpStatus.NOT_FOUND.value(), message);
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
@@ -104,6 +114,12 @@ public class GlobalExceptionHandler {
     public ErrorResponse handleExternalService(ExternalServiceException ex) {
         log.error("РћС€РёР±РєР° РІРЅРµС€РЅРµРіРѕ СЃРµСЂРІРёСЃР°: {}", ex.getMessage(), ex);
         return ErrorResponse.of(HttpStatus.BAD_GATEWAY.value(), ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleIllegalArgument(IllegalArgumentException ex) {
+        return ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

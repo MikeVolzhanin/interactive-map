@@ -2,6 +2,10 @@ export async function fetchRegionStats() {
   return publicRequest('/api/map/regions')
 }
 
+export async function fetchRegionCatalog() {
+  return publicRequest('/api/map/region-catalog')
+}
+
 export async function fetchNews() {
   return publicRequest('/api/news')
 }
@@ -9,6 +13,11 @@ export async function fetchNews() {
 export async function fetchInterestStats(regionId) {
   const query = regionId ? `?regionId=${encodeURIComponent(regionId)}` : ''
   return publicRequest(`/api/map/interests${query}`)
+}
+
+export async function fetchContests(options = {}) {
+  const sort = options.sort === 'deadline' ? 'deadline' : 'none'
+  return publicRequest(`/api/map/contests?sort=${encodeURIComponent(sort)}`)
 }
 
 async function publicRequest(url) {
@@ -20,17 +29,21 @@ async function publicRequest(url) {
   }
 
   let message = `Ошибка ${res.status}`
-  try {
-    const contentType = res.headers.get('content-type') ?? ''
-    if (contentType.includes('application/json')) {
-      const body = await res.json()
-      message = body.message ?? body.error ?? message
-    } else {
-      const text = await res.text()
-      if (text) message = text
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    message = 'Сервер временно недоступен. Подождите несколько секунд и обновите страницу.'
+  } else {
+    try {
+      const contentType = res.headers.get('content-type') ?? ''
+      if (contentType.includes('application/json')) {
+        const body = await res.json()
+        message = body.message ?? body.error ?? message
+      } else {
+        const text = await res.text()
+        if (text && !text.includes('<html')) message = text
+      }
+    } catch (_) {
+      // Ignore response parsing errors and keep the status-based message.
     }
-  } catch (_) {
-    // Ignore response parsing errors and keep the status-based message.
   }
 
   throw new Error(message)
