@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,7 +43,7 @@ public class AuthController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public void register(@RequestBody LoginRegisterUserDto registerUserDto) {
+    public void register(@RequestBody @Valid LoginRegisterUserDto registerUserDto) {
         authenticationService.signup(registerUserDto);
     }
 
@@ -55,7 +56,7 @@ public class AuthController {
     @ApiResponse(responseCode = "404", description = "Пользователь не найден",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/login")
-    public TokenDto authenticate(@RequestBody LoginRegisterUserDto loginUserDto) {
+    public TokenDto authenticate(@RequestBody @Valid LoginRegisterUserDto loginUserDto) {
         return authenticationService.authenticate(loginUserDto);
     }
 
@@ -69,7 +70,7 @@ public class AuthController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/verify")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
+    public void verifyUser(@RequestBody @Valid VerifyUserDto verifyUserDto) {
         authenticationService.verifyUser(verifyUserDto);
     }
 
@@ -98,7 +99,7 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Refresh токен истёк",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/refresh-token")
-    public TokenDto refreshToken(@RequestBody RefreshTokenRequest request) {
+    public TokenDto refreshToken(@RequestBody @Valid RefreshTokenRequest request) {
         return refreshTokenService.refreshToken(request);
     }
 
@@ -123,7 +124,7 @@ public class AuthController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/reset-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changePassword(@RequestBody PasswordDto passwordDto) {
+    public void changePassword(@RequestBody @Valid PasswordDto passwordDto) {
         authenticationService.changePassword(passwordDto);
     }
 

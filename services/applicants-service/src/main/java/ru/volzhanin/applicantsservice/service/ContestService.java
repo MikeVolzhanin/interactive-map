@@ -148,10 +148,7 @@ public class ContestService {
                 contest.setDeadlineOn(ContestExcelSupport.tryResolveDeadlineOn(
                         row, mapping.deadlineColumnIndex(), formatter, evaluator
                 ).orElse(null));
-                if (contest.getExtraData() == null) {
-                    contest.setExtraData(new LinkedHashMap<>());
-                }
-                contest.getExtraData().putAll(extraData);
+                contest.setExtraData(new LinkedHashMap<>(extraData));
                 contestRepository.save(contest);
                 rowsProcessed++;
             }

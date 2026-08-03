@@ -1,2 +1,23 @@
-.idea
+# Environment
 .env
+.env.*
+!deploy/.env.example
+
+# Java
+target/
+*.class
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

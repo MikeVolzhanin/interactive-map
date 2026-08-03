@@ -1,139 +1,112 @@
 # Interactive Map
 
-Веб-приложение для работы с интерактивной картой. Frontend на React, backend на Spring Boot, база данных PostgreSQL.
+Веб-приложение для сбора данных абитуриентов и отображения статистики на интерактивной карте России.
 
-## Стек технологий
+Проект включает React SPA, Spring Boot backend, PostgreSQL и Liquibase-миграции. Основной сценарий запуска - Docker Compose из директории `deploy`.
+
+## Возможности
+
+- регистрация и вход пользователей с email-верификацией;
+- восстановление пароля через код подтверждения;
+- заполнение профиля абитуриента: регион, уровень образования, интересы, телефон;
+- публичная карта со статистикой по регионам и интересам;
+- публичная лента новостей с сайта НИУ ВШЭ Нижний Новгород;
+- административная панель для справочников, выгрузки пользователей и импорта/экспорта конкурсов из XLSX;
+- OpenAPI/Swagger для backend API;
+- Liquibase-миграции с rollback-файлами.
+
+## Стек
 
 | Слой | Технологии |
-|------|-----------|
-| Frontend | React 18, Vite, JavaScript, React Router |
-| Backend | Java 21, Spring Boot, Spring Security, JWT |
-| База данных | PostgreSQL 15, Liquibase |
-| Деплой | Docker, Docker Compose, Nginx |
+| --- | --- |
+| Backend | Java 21, Spring Boot 4, Spring Security, JWT, JPA, MapStruct |
+| Frontend | React 18, Vite, React Router, react-simple-maps |
+| Database | PostgreSQL 15, Liquibase |
+| Files | Apache POI для XLSX |
+| Deploy | Docker, Docker Compose, Nginx |
+| Quality | JUnit 5, Mockito, Checkstyle, JaCoCo, SonarQube profile |
 
-## Требования
+## Структура проекта
 
-- [Docker](https://www.docker.com/) и Docker Compose
-- Git
-
-## Быстрый старт
-
-### 1. Клонировать репозиторий
-
-```bash
-git clone <repo-url>
-cd interactive-map
+```text
+interactive-map/
+├── db/                         # Liquibase changelog и SQL-миграции
+├── deploy/                     # Docker Compose, env-template, scripts
+├── frontend/                   # Основной React SPA, используется в Docker deploy
+├── custom-frontend/            # Альтернативный Vite/React UI
+├── services/
+│   └── applicants-service/     # Spring Boot backend
+├── template.docx
+└── README.md
 ```
 
-### 2. Настроить переменные окружения
+## Быстрый старт через Docker
+
+### 1. Подготовьте env-файл
 
 ```bash
 cp deploy/.env.example deploy/.env
 ```
 
-Открыть `deploy/.env` и заполнить:
+Заполните `deploy/.env`:
 
 ```env
-# Database (можно оставить как есть для локального запуска)
 SPRING_DATASOURCE_URL=jdbc:postgresql://interactive-map-db:5432/interactive-map-db
 SPRING_DATASOURCE_USERNAME=postgres
 SPRING_DATASOURCE_PASSWORD=postgres
 
-# Mail — Gmail аккаунт для отправки писем
 SUPPORT_EMAIL=your-email@gmail.com
-APP_PASSWORD=your-gmail-app-password   # App Password из настроек Google
+APP_PASSWORD=your-gmail-app-password
 
-# JWT — случайная строка в base64 (минимум 32 символа)
 JWT_SECRET_KEY=your-base64-encoded-secret-key
+CORS_ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-> Для получения Gmail App Password: Google Account → Security → 2-Step Verification → App passwords
+`JWT_SECRET_KEY` должен быть base64-строкой достаточной длины для HMAC. Для локальной разработки можно сгенерировать ключ любым надежным генератором случайных байт и закодировать его в base64.
 
-### 3. Запустить
+### 2. Запустите приложение
 
 ```bash
 cd deploy
 docker-compose up --build
 ```
 
-При первом запуске и при каждом `up` контейнер **migrator** автоматически применяет все новые Liquibase-миграции из `db/` (сервис `applicants-service` стартует только после успешного `update`).
-
-После обновления ветки из `master` на уже существующем томе PostgreSQL достаточно пересобрать сервисы — миграции подтянутся сами:
-
-```bash
-cd deploy
-docker-compose up --build -d
-```
-
-Если БД уже запущена, а нужно только применить схему без полного перезапуска:
-
-```bash
-cd deploy
-docker-compose run --rm migrator
-docker-compose up --build -d applicants-service frontend
-```
-
 После запуска:
-- Фронтенд: http://localhost:3000
-- Backend API: http://localhost:8080
-- Swagger UI: http://localhost:8080/swagger-ui.html
 
-## Структура проекта
+- Frontend: <http://localhost:3000>
+- Backend API: <http://localhost:8080>
+- Swagger UI: <http://localhost:8080/swagger-ui.html>
 
-```
-interactive-map/
-├── frontend/               # React SPA
-├── services/
-│   └── applicants-service/ # Spring Boot сервис
-├── db/                     # Liquibase миграции (см. db/db.changelog-master.xml)
-│   ├── db.changelog-master.xml
-│   └── changelog/          # v1.0.0 … v1.0.7 (схема, конкурсы, доп. поля выгрузки)
-│   └── changelog/
-└── deploy/
-    ├── docker-compose.yml
-    └── .env.example
-```
+Контейнер `migrator` применяет Liquibase-миграции из `db/` до запуска backend-сервиса.
 
-## Полезные команды
+## Локальная разработка
 
-### Пересобрать конкретный сервис после изменений
+### Backend
+
+Поднимите PostgreSQL и примените миграции:
 
 ```bash
 cd deploy
-docker-compose up --build applicants-service
-docker-compose up --build frontend
+docker-compose up interactive-map-db migrator
 ```
 
-### Остановить все контейнеры
+Создайте локальный конфиг:
 
 ```bash
-cd deploy
-docker-compose down
+cp services/applicants-service/src/main/resources/application-example.yml \
+   services/applicants-service/src/main/resources/application.yml
 ```
 
-### Остановить и удалить данные БД
+Запустите сервис:
 
 ```bash
-cd deploy
-docker-compose down -v
+cd services/applicants-service
+mvn spring-boot:run
 ```
-
-### Применить миграции БД вручную
-
-```bash
-cd deploy
-docker-compose run --rm migrator
-```
-
-### Посмотреть логи сервиса
-
-```bash
-docker logs interactive-map-applicants-service -f
-```
-
-## Локальная разработка (без Docker)
 
 ### Frontend
+
+Основной frontend:
 
 ```bash
 cd frontend
@@ -141,45 +114,101 @@ npm install
 npm run dev
 ```
 
-Запускается на http://localhost:3000. Запросы к `/api/*` проксируются на `http://localhost:8080`.
+Vite dev server запускается на <http://localhost:3000> и проксирует `/api/*` на <http://localhost:8080>.
 
-### Backend
+Альтернативный UI:
 
-Требуется запущенный PostgreSQL. Запустить только БД через Docker:
+```bash
+cd custom-frontend
+npm install
+npm run dev
+```
+
+## API
+
+Основные группы endpoint'ов:
+
+| Группа | Назначение |
+| --- | --- |
+| `/api/auth/*` | регистрация, вход, верификация, refresh token, logout, восстановление пароля |
+| `/api/users/*` | профиль пользователя и XLSX-экспорт пользователей |
+| `/api/map/*` | публичные данные для карты, интересов, регионального каталога и конкурсов |
+| `/api/news` | публичная лента новостей |
+| `/api/education-levels` | справочник уровней образования |
+| `/api/interests` | справочник интересов |
+| `/api/regions` | справочник регионов |
+| `/api/admin/contests/*` | импорт, экспорт и очистка конкурсов |
+
+Доступ:
+
+- публичные endpoints: `/api/auth/signup`, `/api/auth/login`, `/api/auth/verify`, `/api/auth/resend`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/map/*`, `/api/news`;
+- пользовательские endpoints требуют JWT;
+- `/api/admin/**` требует роль `ADMIN`;
+- сейчас роль `ADMIN` назначается при регистрации email на доменах `hse.ru` и `edu.hse.ru`.
+
+## Миграции БД
+
+Главный changelog: `db/db.changelog-master.xml`.
+
+Миграции разделены по версиям:
+
+```text
+db/changelog/
+├── v1.0.0.xml
+├── ...
+└── v1.0.8.xml
+```
+
+Применить миграции вручную:
 
 ```bash
 cd deploy
-docker-compose up interactive-map-db migrator
+docker-compose run --rm migrator
 ```
 
-Затем переименовать файл конфигурации:
+## Тесты и сборка
 
-```bash
-cp services/applicants-service/src/main/resources/application-example.yml \
-   services/applicants-service/src/main/resources/application.yml
-```
-
-> `application-example.yml` — шаблон конфигурации, хранящийся в репозитории. При клонировании необходимо создать на его основе `application.yml` и заполнить переменные окружения (БД, JWT, почта). Файл `application.yml` добавлен в `.gitignore` и не попадает в репозиторий.
-
-Затем запустить сервис через IDE или Maven:
+Backend:
 
 ```bash
 cd services/applicants-service
-mvn spring-boot:run
+mvn test
 ```
 
-### Local SonarQube
-
-SonarQube запускается отдельным Docker Compose profile, чтобы обычный локальный старт приложения не поднимал его автоматически:
+Frontend:
 
 ```bash
-cd deploy
-docker-compose --profile quality up -d sonarqube
+cd frontend
+npm run build
 ```
 
-После старта UI доступен на http://localhost:9000. Логин по умолчанию: `admin`, пароль: `admin`; при первом входе SonarQube попросит сменить пароль.
+Alternative frontend:
 
-Для анализа `applicants-service` создайте local project token в SonarQube и запустите:
+```bash
+cd custom-frontend
+npm run build
+```
+
+Проверка зависимостей:
+
+```bash
+cd frontend
+npm audit --omit=dev
+
+cd ../custom-frontend
+npm audit --omit=dev
+```
+
+## SonarQube
+
+Локальный SonarQube запускается отдельным compose-файлом:
+
+```bash
+cd deploy/sonarqube
+docker-compose up -d
+```
+
+После создания token в SonarQube:
 
 ```bash
 cd services/applicants-service
@@ -188,4 +217,68 @@ mvn verify sonar:sonar \
   -Dsonar.token=<your-local-sonarqube-token>
 ```
 
-JaCoCo XML-отчёт будет создан в `target/site/jacoco/jacoco.xml` и передан в SonarQube через настройки Maven.
+## Работа с XLSX
+
+Администратор может:
+
+- выгружать пользователей в Excel через `/api/users/export`;
+- импортировать конкурсы из XLSX через `/api/admin/contests/import`;
+- выгружать конкурсы через `/api/admin/contests/export`;
+- очистить список конкурсов через `DELETE /api/admin/contests`.
+
+Пример файла импорта конкурсов доступен в `frontend/public/samples/contests-import-sample.xlsx`.
+
+## Полезные команды
+
+Пересобрать и запустить все сервисы:
+
+```bash
+cd deploy
+docker-compose up --build -d
+```
+
+Пересобрать только backend и frontend:
+
+```bash
+cd deploy
+docker-compose up --build -d applicants-service frontend
+```
+
+Остановить сервисы:
+
+```bash
+cd deploy
+docker-compose down
+```
+
+Остановить сервисы и удалить volume PostgreSQL:
+
+```bash
+cd deploy
+docker-compose down -v
+```
+
+Логи backend:
+
+```bash
+docker logs interactive-map-applicants-service -f
+```
+
+## Переменные окружения
+
+| Переменная | Назначение |
+| --- | --- |
+| `SPRING_DATASOURCE_URL` | JDBC URL PostgreSQL |
+| `SPRING_DATASOURCE_USERNAME` | пользователь PostgreSQL |
+| `SPRING_DATASOURCE_PASSWORD` | пароль PostgreSQL |
+| `SUPPORT_EMAIL` | SMTP-логин отправителя |
+| `APP_PASSWORD` | пароль приложения для SMTP |
+| `JWT_SECRET_KEY` | base64 secret для JWT |
+| `CORS_ALLOWED_ORIGINS` | разрешенные origin для браузерных запросов |
+
+## Примечания по безопасности
+
+- Не коммитьте реальные `.env`, пароли SMTP и JWT secret.
+- Для production укажите конкретные `CORS_ALLOWED_ORIGINS`, не используйте wildcard.
+- Refresh tokens хранятся в БД и ограничены уникальностью по пользователю и token.
+- Frontend хранит access/refresh tokens в `localStorage`; при повышенных требованиях к безопасности стоит рассмотреть httpOnly cookies и CSRF-защиту.

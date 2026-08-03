@@ -52,6 +52,7 @@ public class User implements UserDetails {
     private String password;
 
     @Column(name = "email_verified")
+    @Builder.Default
     private boolean emailVerified = false;
 
     @Column(name = "verification_code", length = 6)
@@ -61,6 +62,7 @@ public class User implements UserDetails {
     private LocalDateTime verificationCodeExpiresAt;
 
     @Column(name = "verification_attempts_left")
+    @Builder.Default
     private Short verificationAttemptsLeft = 3;
 
     //остальная информация
@@ -93,16 +95,20 @@ public class User implements UserDetails {
             joinColumns = @JoinColumn(name = "users_id"),
             inverseJoinColumns = @JoinColumn(name = "interest_id")
     )
+    @Builder.Default
     private Set<Interest> interests = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.USER;
 
     @Column(name = "profile_completed")
+    @Builder.Default
     private boolean profileCompleted = false;
 
     @Column(name = "password_reset_pending")
+    @Builder.Default
     private boolean passwordResetPending = false;
 
     @CreationTimestamp

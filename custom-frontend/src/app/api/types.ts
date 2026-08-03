@@ -17,6 +17,7 @@ export interface Interest {
 export interface MapStatItem {
   regionId: number | string;
   regionName?: string;
+  applicantsCount?: number;
   count: number;
 }
 

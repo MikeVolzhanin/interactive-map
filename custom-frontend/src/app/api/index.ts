@@ -36,7 +36,7 @@ export const api = {
     apiClient.post<{ message: string }>('/auth/reset-password', data),
 
   // Regions / карта — без JWT (и без редиректа на логин при «битом» токене в localStorage)
-  getRegions: () => apiClient.get<Region[]>('/regions', { skipAuth: true }),
+  getRegions: () => apiClient.get<Region[]>('/map/region-catalog', { skipAuth: true }),
 
   getEducationLevels: () =>
     apiClient.get<EducationLevel[]>('/education-levels'),
@@ -50,10 +50,7 @@ export const api = {
     if (params.dateFrom) queryParams.set('dateFrom', params.dateFrom);
     if (params.dateTo) queryParams.set('dateTo', params.dateTo);
     const query = queryParams.toString();
-    return apiClient.get<MapStatsResponse>(
-      `/map-stats/registrations-by-region${query ? `?${query}` : ''}`,
-      { skipAuth: true },
-    );
+    return apiClient.get<MapStatsResponse>(`/map/regions${query ? `?${query}` : ''}`, { skipAuth: true });
   },
 
   // Users

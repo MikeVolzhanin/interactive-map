@@ -115,6 +115,28 @@ export async function fetchNnovNewsHtmlPage(page: number): Promise<string> {
 }
 
 export async function loadNnovNewsPage(page: number): Promise<ParsedNewsPage> {
+  if (page === 1) {
+    const res = await fetch('/api/news');
+    if (res.ok) {
+      const backendItems = await res.json();
+      if (Array.isArray(backendItems)) {
+        const items = backendItems.map((item) => ({
+          title: String(item.title ?? ''),
+          link: String(item.link ?? ''),
+          imageUrl: null,
+          description: String(item.text ?? ''),
+          dateLabel: String(item.date ?? ''),
+          category: null,
+        })).filter((item) => item.title && item.link);
+        return { items, rawPostCount: items.length };
+      }
+    }
+  }
+
+  if (page > 1) {
+    return { items: [], rawPostCount: 0 };
+  }
+
   const html = await fetchNnovNewsHtmlPage(page);
   return parseNnovNewsListingHtml(html);
 }

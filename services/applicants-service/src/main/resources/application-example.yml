@@ -30,3 +30,6 @@ security:
 
 refresh-token:
   duration: 10080m
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

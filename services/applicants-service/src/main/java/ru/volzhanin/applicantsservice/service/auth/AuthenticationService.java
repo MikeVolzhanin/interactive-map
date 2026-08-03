@@ -245,7 +245,11 @@ public class AuthenticationService {
     }
 
     private Role resolveRole(String email) {
-        String domain = email.substring(email.indexOf('@') + 1).toLowerCase();
+        int atIndex = email == null ? -1 : email.lastIndexOf('@');
+        if (atIndex < 0 || atIndex == email.length() - 1) {
+            return Role.USER;
+        }
+        String domain = email.substring(atIndex + 1).toLowerCase();
         return (domain.equals("edu.hse.ru") || domain.equals("hse.ru")) ? Role.ADMIN : Role.USER;
     }
 

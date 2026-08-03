@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,7 +46,7 @@ public class UserController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/add-info")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addUserInfo(@RequestBody UserInfoDto userInfoDto) {
+    public void addUserInfo(@RequestBody @Valid UserInfoDto userInfoDto) {
         userService.addInfo(userInfoDto);
     }
 
@@ -72,7 +73,7 @@ public class UserController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping("/change-interests")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changeInterests(@RequestBody UserInterestsDto userInterestsDto) {
+    public void changeInterests(@RequestBody @Valid UserInterestsDto userInterestsDto) {
         userService.changeInterests(userInterestsDto);
     }
 

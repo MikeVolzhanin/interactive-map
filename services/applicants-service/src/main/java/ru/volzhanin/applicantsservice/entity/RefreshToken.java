@@ -25,10 +25,12 @@ public class RefreshToken {
     @Column(name = "id")
     private Long id;
     @OneToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;
-    @Column(name = "token")
+
+    @Column(name = "token", nullable = false, unique = true)
     private String token;
-    @Column(name = "expiry_date")
+
+    @Column(name = "expiry_date", nullable = false)
     private Date expiryDate;
 }

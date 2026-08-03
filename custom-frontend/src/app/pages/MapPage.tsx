@@ -47,7 +47,7 @@ export function MapPage() {
         const hit = stats.find((item) => String(item.regionId) === String(region.id));
         return {
           regionId: String(region.id),
-          count: hit ? Number(hit.count) || 0 : 0,
+          count: hit ? Number(hit.count ?? hit.applicantsCount) || 0 : 0,
         };
       });
 

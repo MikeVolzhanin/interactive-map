@@ -80,7 +80,7 @@ public class UserService {
                         .orElseThrow(() -> new UserNotFoundException("Регион не найден"))
         );
 
-        user.setInterests(new HashSet<>(interestRepository.findAllById(input.getInterestIds())));
+        user.setInterests(loadInterests(input.getInterestIds()));
         user.setProfileCompleted(true);
 
         userRepository.save(user);
@@ -114,7 +114,7 @@ public class UserService {
     public void changeInterests(UserInterestsDto input) {
         User user = getCurrentUser();
 
-        user.setInterests(new HashSet<>(interestRepository.findAllById(input.getInterestIds())));
+        user.setInterests(loadInterests(input.getInterestIds()));
         userRepository.save(user);
 
         log.info("Интересы обновлены: email={}", user.getEmail());
@@ -140,6 +140,18 @@ public class UserService {
         String email = Objects.requireNonNull(authentication).getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND));
+    }
+
+    private Set<Interest> loadInterests(Set<Long> interestIds) {
+        if (interestIds == null) {
+            return Set.of();
+        }
+
+        List<Interest> interests = interestRepository.findAllById(interestIds);
+        if (interests.size() != interestIds.size()) {
+            throw new UserNotFoundException("Один или несколько интересов не найдены");
+        }
+        return new HashSet<>(interests);
     }
 
     private CellStyle createHeaderStyle(Workbook workbook) {
